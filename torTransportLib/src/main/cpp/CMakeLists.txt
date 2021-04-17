@@ -1,16 +1,8 @@
 cmake_minimum_required(VERSION 3.10.2)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 project("zeroprism")
-
-#
-# zeroprism
-#
-add_library(zeroprism SHARED
-        org_zeroprism_Transport.cpp
-        org_zeroprism_Pdnsd.cpp
-        )
-target_include_directories(zeroprism PRIVATE "tor" "pdnsd" "tun2socks")
 
 #
 # tor - precompiled .so
@@ -24,8 +16,25 @@ endif ()
 # pdnsd
 #
 set(PDNSD_FOLDER "../../../../external/pdnsd")
-file(GLOB_RECURSE PDNSD_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} ${PDNSD_FOLDER}/*.c)
-add_library(pdnsd STATIC ${PDNSD_SOURCES}
+add_library(pdnsd STATIC
+        ${PDNSD_FOLDER}/src/cache.c
+        ${PDNSD_FOLDER}/src/conf-parser.c
+        ${PDNSD_FOLDER}/src/conff.c
+        ${PDNSD_FOLDER}/src/consts.c
+        ${PDNSD_FOLDER}/src/debug.c
+        ${PDNSD_FOLDER}/src/dns_answer.c
+        ${PDNSD_FOLDER}/src/dns_query.c
+        ${PDNSD_FOLDER}/src/dns.c
+        ${PDNSD_FOLDER}/src/error.c
+        ${PDNSD_FOLDER}/src/hash.c
+        ${PDNSD_FOLDER}/src/helpers.c
+        ${PDNSD_FOLDER}/src/icmp.c
+        ${PDNSD_FOLDER}/src/list.c
+        ${PDNSD_FOLDER}/src/netdev.c
+        ${PDNSD_FOLDER}/src/rr_types.c
+        ${PDNSD_FOLDER}/src/servers.c
+        ${PDNSD_FOLDER}/src/status.c
+        ${PDNSD_FOLDER}/src/thread.c
         pdnsd/pdnsd_client.c)
 target_compile_options(pdnsd PRIVATE "-Wall -DHAVE_STPCPY")
 target_include_directories(pdnsd PRIVATE ${PDNSD_FOLDER})
@@ -94,16 +103,17 @@ add_library(badvpn STATIC
         ${BADVPN_FOLDER}/lwip/src/core/ipv6/ip6_frag.c
         ${BADVPN_FOLDER}/lwip/src/core/ipv6/nd6.c
         ${BADVPN_FOLDER}/lwip/custom/sys.c
-        ${BADVPN_FOLDER}/tun2socks/tun2socks.c
         ${BADVPN_FOLDER}/base/DebugObject.c
         ${BADVPN_FOLDER}/base/BLog.c
         ${BADVPN_FOLDER}/base/BPending.c
         ${BADVPN_FOLDER}/system/BDatagram_unix.c
         ${BADVPN_FOLDER}/flowextra/PacketPassInactivityMonitor.c
         ${BADVPN_FOLDER}/tun2socks/SocksUdpGwClient.c
-        ${BADVPN_FOLDER}/udpgw_client/UdpGwClient.c)
+        ${BADVPN_FOLDER}/udpgw_client/UdpGwClient.c
+        tun2socks/tun2socks_client.c)
 
-target_compile_options(badvpn PRIVATE "-std=gnu99 -DBADVPN_THREADWORK_USE_PTHREAD -DBADVPN_LINUX -DBADVPN_BREACTOR_BADVPN -D_GNU_SOURCE -DBADVPN_USE_SELFPIPE -DBADVPN_USE_EPOLL -DBADVPN_LITTLE_ENDIAN -DBADVPN_THREAD_SAFE -DNDEBUG -DANDROID -DTUN2SOCKS_JNI -DPSIPHON")
+set_property(TARGET badvpn PROPERTY C_STANDARD 99)
+target_compile_definitions(badvpn PRIVATE "-DBADVPN_THREADWORK_USE_PTHREAD -DBADVPN_LINUX -DBADVPN_BREACTOR_BADVPN -D_GNU_SOURCE -DBADVPN_USE_SELFPIPE -DBADVPN_USE_EPOLL -DBADVPN_LITTLE_ENDIAN -DBADVPN_THREAD_SAFE -DNDEBUG -DANDROID -DTUN2SOCKS_JNI -DPSIPHON")
 target_include_directories(badvpn PRIVATE
         ${LIBANCILLARY_FOLDER}
         ${BADVPN_FOLDER}
@@ -122,4 +132,12 @@ find_library(androidlog log)
 #
 find_library(dllib dl)
 
-target_link_libraries(zeroprism ${pdnsd} ${libancillary} ${torlib} ${androidlog} ${dllib})
+#
+# zeroprism
+#
+add_library(zeroprism SHARED
+        org_zeroprism_Transport.cpp
+        org_zeroprism_Pdnsd.cpp
+        org_zeroprism_Tun2Socks.cpp)
+target_include_directories(zeroprism PRIVATE "tor" "pdnsd" "tun2socks")
+target_link_libraries(zeroprism pdnsd libancillary badvpn ${torlib} ${androidlog} ${dllib})
