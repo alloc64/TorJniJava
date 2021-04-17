@@ -20,4 +20,7 @@ public class Transport
 
     public native int runMain();
 
+    private native int runDnsd(String[] args);
+
+    private native int destroyDnsd();
 }

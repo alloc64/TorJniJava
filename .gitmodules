@@ -1,0 +1,9 @@
+[submodule "external/libancillary"]
+	path = external/libancillary
+	url = https://github.com/shadowsocks/libancillary.git
+[submodule "external/badvpn"]
+	path = external/badvpn
+	url = https://github.com/ambrop72/badvpn.git
+[submodule "external/pdnsd"]
+	path = external/pdnsd
+	url = https://github.com/shadowsocks/pdnsd.git

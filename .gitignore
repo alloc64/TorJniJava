@@ -13,3 +13,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+torTransportLib/src/main/libs

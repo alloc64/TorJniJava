@@ -9,12 +9,13 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "org_zeroprism_Pdnsd.h"
+
 #ifdef ANDROID
-
 #include <android/log.h>
-
 #define fprintf(ignored, ...)  __android_log_print(ANDROID_LOG_ERROR, "ZPC", ##__VA_ARGS__)
 #endif // ANDROID
+
 
 static const char *className = "org/zeroprism/Transport";
 
@@ -263,6 +264,10 @@ static JNINativeMethod methods[] = {
         {"prepareFileDescriptor", "(Ljava/lang/String;)Ljava/io/FileDescriptor;", (void *) prepareFileDescriptor},
         {"version", "()Ljava/lang/String;", (void *) version},
         {"runMain", "()I", (void *) runMain},
+
+        // pdnsd stuff
+        {"runDnsd", "([Ljava/lang/String;)I", (void *) runDnsd},
+        {"destroyDnsd", "()I", (void *) destroyDnsd},
 };
 
 
