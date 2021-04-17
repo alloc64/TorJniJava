@@ -23,5 +23,14 @@ public class MainActivity extends Activity
         // Example of a call to a native method
         TextView tv = findViewById(R.id.sample_text);
         tv.setText(t.version());
+
+        try
+        {
+            t.test(this);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 }

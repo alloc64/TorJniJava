@@ -1,7 +1,7 @@
 #include <jni.h>
 #include "tun2socks_client.h"
 
-jint runInterface(
+jint runTun2SocksInterface(
         JNIEnv *env,
         jobject thiz,
         jint vpnInterfaceFileDescriptor,

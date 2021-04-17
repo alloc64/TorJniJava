@@ -10,6 +10,7 @@
 #include <sys/un.h>
 
 #include "org_zeroprism_Pdnsd.h"
+#include "org_zeroprism_Tun2Socks.h"
 
 #ifdef ANDROID
 #include <android/log.h>
@@ -195,11 +196,6 @@ runMain(JNIEnv *env, jobject thiz) {
 
 // region JNI methods
 
-static jstring stringFromJNI(JNIEnv *env, jobject thiz) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
-}
-
 static jstring version(JNIEnv *env, jobject thiz) {
     return env->NewStringUTF(tor_api_get_provider_version());
 }
@@ -253,8 +249,7 @@ static jobject prepareFileDescriptor(JNIEnv *env, jclass thiz, jstring arg) {
 
 
 static JNINativeMethod methods[] = {
-        {"stringFromJNI", "()Ljava/lang/String;", (void *) stringFromJNI},
-
+        // tor stuff
         {"createTorConfiguration", "()Z", (void *) createTorConfiguration},
         {"setupControlSocket", "()Z", (void *) setupControlSocket},
 
@@ -268,6 +263,10 @@ static JNINativeMethod methods[] = {
         // pdnsd stuff
         {"runDnsd", "([Ljava/lang/String;)I", (void *) runDnsd},
         {"destroyDnsd", "()I", (void *) destroyDnsd},
+
+        // tun2socks stuff
+        {"runTun2SocksInterface", "(IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I", (void *) runTun2SocksInterface},
+        {"destroyTun2SocksInterface", "()V", (void *) destroyTun2SocksInterface},
 };
 
 
@@ -299,15 +298,14 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     UnionJNIEnvToVoid uenv;
     uenv.venv = nullptr;
     jint result = -1;
-    JNIEnv *env = nullptr;
+    JNIEnv *env;
 
     if (vm->GetEnv(&uenv.venv, JNI_VERSION_1_4) != JNI_OK) {
         fprintf(stderr, "vm->GetEnv failed");
         goto bail;
     }
 
-    env = uenv.env;
-    if (registerNatives(env) != JNI_TRUE) {
+    if (registerNatives(uenv.env) != JNI_TRUE) {
         fprintf(stderr, "registerNatives failed");
         goto bail;
     }

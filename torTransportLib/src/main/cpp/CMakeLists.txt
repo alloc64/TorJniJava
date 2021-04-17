@@ -50,7 +50,7 @@ target_include_directories(libancillary PRIVATE ${LIBANCILLARY_FOLDER})
 #
 # badvpn (tun2socks)
 #
-set(BADVPN_FOLDER "../../../../external/badvpn")
+set(BADVPN_FOLDER "../../../../external/badvpn-guardian")
 add_library(badvpn STATIC
         ${BADVPN_FOLDER}/base/BLog_syslog.c
         ${BADVPN_FOLDER}/system/BReactor_badvpn.c
@@ -141,3 +141,8 @@ add_library(zeroprism SHARED
         org_zeroprism_Tun2Socks.cpp)
 target_include_directories(zeroprism PRIVATE "tor" "pdnsd" "tun2socks")
 target_link_libraries(zeroprism pdnsd libancillary badvpn ${torlib} ${androidlog} ${dllib})
+
+#
+# build hardening
+#
+target_compile_options(zeroprism PRIVATE "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O3>")

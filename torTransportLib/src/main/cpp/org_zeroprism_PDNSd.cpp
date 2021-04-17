@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <jni.h>
 #include <malloc.h>
+#include <string.h>
 
 #include "pdnsd_client.h"
 
@@ -10,7 +11,7 @@ struct DnsArgs {
     char **argv;
 };
 
-pthread_t *running_thread = nullptr;
+pthread_t running_thread;
 
 void *thread_runner(void *a) {
     auto *args = (struct DnsArgs *) a;
@@ -28,18 +29,18 @@ jint runDnsd(JNIEnv *env, jobject thiz, jobjectArray argv) {
     for (int i = 0; i < a->argc; i++) {
         auto string = (jstring) env->GetObjectArrayElement(argv, i);
         auto *rawString = env->GetStringUTFChars(string, 0);
-        a->argv[i] = const_cast<char *>(rawString);
+        a->argv[i] = strdup(rawString);
         env->ReleaseStringUTFChars(string, rawString);
     }
 
-    pthread_create(running_thread, nullptr, thread_runner, &a);
+    pthread_create(&running_thread, nullptr, thread_runner, a);
 
     return 0;
 }
 
 jint destroyDnsd(JNIEnv *env, jobject thiz) {
-    if (running_thread == NULL)
+    if (running_thread == 0)
         return -1;
 
-    return pthread_kill(*running_thread, 0);
+    return pthread_kill(running_thread, 0);
 }

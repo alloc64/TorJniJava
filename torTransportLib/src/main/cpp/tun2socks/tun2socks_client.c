@@ -88,6 +88,11 @@
     BReactor_Synchronize(&ss, &sync_mark.base); \
     BPending_Free(&sync_mark);
 
+#ifdef ANDROID
+#include <android/log.h>
+#define fprintf(ignored, ...)  __android_log_print(ANDROID_LOG_ERROR, "T2C", ##__VA_ARGS__)
+#endif // ANDROID
+
 
 // command-line options
 struct {
@@ -2098,4 +2103,9 @@ void udpgw_client_handler_received (void *unused, BAddr local_addr, BAddr remote
 
     // submit packet
     BTap_Send(&device, device_write_buf, packet_length);
+}
+
+void PsiphonLog(const char *levelStr, const char *channelStr, const char *msgStr)
+{
+    fprintf("%s: %s %s", levelStr, channelStr, msgStr);
 }
