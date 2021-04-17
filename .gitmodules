@@ -4,3 +4,6 @@
 [submodule "external/pdnsd"]
 	path = external/pdnsd
 	url = https://github.com/shadowsocks/pdnsd.git
+[submodule "external/badvpn"]
+	path = external/badvpn
+	url = https://github.com/guardianproject/badvpn.git
