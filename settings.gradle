@@ -1,0 +1,3 @@
+include ':torTransportLib'
+include ':app'
+rootProject.name = "ZP test"
