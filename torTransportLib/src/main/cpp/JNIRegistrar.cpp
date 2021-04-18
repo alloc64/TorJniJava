@@ -5,6 +5,8 @@
 #include <jni.h>
 #include "Logger.h"
 #include "JNIRegistrar.h"
+#include "PdnsdClient.h"
+#include "TorClient.h"
 
 typedef union {
     JNIEnv *env;
@@ -28,6 +30,6 @@ int JNIRegistrar::registerWithJNI(JNIEnv *env) {
     Logger::setEnv(env);
 
     // Register JNIAware instances here
-
-
+    new TorClient(env);
+    new PdnsdClient(env);
 }

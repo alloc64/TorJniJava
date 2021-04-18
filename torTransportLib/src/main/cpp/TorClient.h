@@ -27,15 +27,9 @@ public:
         this->instance = this;
     }
 
-    void start() override;
-
 private:
     static TorClient *getInstance() {
         return instance;
-    }
-
-    static void initialize() {
-        instance = nullptr;
     }
 
     static jstring version(JNIEnv *env, jobject thiz);
@@ -51,8 +45,6 @@ private:
     static void startInternal(JNIEnv *env, jobject thiz);
 
     static jobject prepareFileDescriptor(JNIEnv *env, jclass thiz, jstring arg);
-
-
 
     tor_main_configuration_t *getTorConfig() const {
         return torConfig;

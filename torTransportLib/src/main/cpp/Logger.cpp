@@ -5,6 +5,8 @@
 #include <android/log.h>
 #include "Logger.h"
 
+JNIEnv *Logger::env = nullptr;
+
 void Logger::d(const char *tag, const char *msg, ...) {
     va_list ap;
     va_start(ap, msg);
