@@ -52,7 +52,7 @@ public class Transport
 
     public native boolean setupControlSocket();
 
-    public native int runMain();
+    public native void runMain();
 
     public native int runDnsd(String[] args);
 

@@ -86,17 +86,21 @@ bool TorClient::setCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv) 
     return true;
 }
 
-int TorClient::runMain(JNIEnv *env, jobject thiz) {
+void TorClient::startInternal(JNIEnv *env, jobject thiz) {
+    getInstance()->start();
+}
+
+void TorClient::run() {
     auto torConfig = getInstance()->getTorConfig();
     if (torConfig == nullptr) {
-        Logger::e(TAG, "Config must be first created, to use this method.");
-        return -1;
+        Logger::e(TAG, "Config must be first created, to start.");
+        return;
     }
+
     int rv = tor_run_main(torConfig);
+
     if (rv != 0)
         Logger::e(TAG, "An error occured while starting daemon: %d", rv);
-
-    return rv;
 }
 
 /**
