@@ -1,6 +1,6 @@
 
-#ifndef ZP_TEST_ORG_ZEROPRISM_TUN2SOCKS_H
-#define ZP_TEST_ORG_ZEROPRISM_TUN2SOCKS_H
+#ifndef ORG_ZEROPRISM_TUN2SOCKS_H
+#define ORG_ZEROPRISM_TUN2SOCKS_H
 
 jint runTun2SocksInterface(
         JNIEnv *env,
@@ -15,4 +15,4 @@ jint runTun2SocksInterface(
 
 void destroyTun2SocksInterface(JNIEnv *env, jobject thiz);
 
-#endif //ZP_TEST_ORG_ZEROPRISM_TUN2SOCKS_H
+#endif //ORG_ZEROPRISM_TUN2SOCKS_H

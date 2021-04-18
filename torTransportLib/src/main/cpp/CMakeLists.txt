@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10.2)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_STANDARD 17)
 
 project("zeroprism")
 
@@ -36,7 +37,8 @@ add_library(pdnsd STATIC
         ${PDNSD_FOLDER}/src/status.c
         ${PDNSD_FOLDER}/src/thread.c
         pdnsd/pdnsd_client.c)
-target_compile_options(pdnsd PRIVATE "-Wall -DHAVE_STPCPY")
+target_compile_options(pdnsd PRIVATE "-Wall")
+target_compile_definitions(pdnsd PRIVATE "-DHAVE_STPCPY")
 target_include_directories(pdnsd PRIVATE ${PDNSD_FOLDER})
 
 #
@@ -136,7 +138,10 @@ find_library(dllib dl)
 # zeroprism
 #
 add_library(zeroprism SHARED
-        org_zeroprism_Transport.cpp
+        JNIRegistrar.cpp
+        JNIAware.cpp
+        Logger.cpp
+        TorClient.cpp
         org_zeroprism_Pdnsd.cpp
         org_zeroprism_Tun2Socks.cpp)
 target_include_directories(zeroprism PRIVATE "tor" "pdnsd" "tun2socks")
