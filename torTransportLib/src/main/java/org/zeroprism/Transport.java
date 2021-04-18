@@ -58,7 +58,7 @@ public class Transport
 
     public native void destroyDnsd();
 
-    public native int runTun2SocksInterface(
+    public native void runTun2SocksInterface(
             int vpnInterfaceFileDescriptor,
             int vpnInterfaceMTU,
             String vpnIpAddress,

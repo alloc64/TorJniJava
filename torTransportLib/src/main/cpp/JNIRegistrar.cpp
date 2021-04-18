@@ -1,12 +1,10 @@
-//
-// Created by user on 18.04.2021.
-//
-
 #include <jni.h>
+
 #include "Logger.h"
 #include "JNIRegistrar.h"
 #include "PdnsdClient.h"
 #include "TorClient.h"
+#include "Tun2SocksClient.h"
 
 typedef union {
     JNIEnv *env;
@@ -32,4 +30,5 @@ int JNIRegistrar::registerWithJNI(JNIEnv *env) {
     // Register JNIAware instances here
     new TorClient(env);
     new PdnsdClient(env);
+    new Tun2SocksClient(env);
 }

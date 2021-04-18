@@ -144,7 +144,7 @@ add_library(zeroprism SHARED
         TorClient.cpp
         PdnsdClient.cpp
         ProcessInThread.cpp
-        org_zeroprism_Tun2Socks.cpp)
+        Tun2SocksClient.cpp)
 target_include_directories(zeroprism PRIVATE "tor" "pdnsd" "tun2socks")
 target_link_libraries(zeroprism pdnsd libancillary badvpn ${torlib} ${androidlog} ${dllib})
 
