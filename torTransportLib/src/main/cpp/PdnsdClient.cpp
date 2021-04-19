@@ -5,10 +5,10 @@
 PdnsdClient *PdnsdClient::instance = nullptr;
 
 void PdnsdClient::run() {
-    runPdnsd(this->argc, this->argv);
+    runPdnsd(this->args.size(), const_cast<char **>(this->args.data()));
 }
 
-void PdnsdClient::runDnsd(JNIEnv *env, jobject thiz, jobjectArray argv) {
+void PdnsdClient::startDnsd(JNIEnv *env, jobject thiz, jobjectArray argv) {
     getInstance()->setArguments(argv);
     getInstance()->start();
 }
@@ -20,13 +20,12 @@ void PdnsdClient::destroyDnsd(JNIEnv *env, jobject thiz) {
 void PdnsdClient::setArguments(jobjectArray argv) {
     auto env = getJNIEnv();
 
-    this->argc = env->GetArrayLength(argv);
-    this->argv = static_cast<char **>(malloc(this->argc * sizeof(char *)));
+    int length = env->GetArrayLength(argv);
 
-    for (int i = 0; i < this->argc; i++) {
+    for (int i = 0; i < length; i++) {
         auto string = (jstring) env->GetObjectArrayElement(argv, i);
         auto *rawString = env->GetStringUTFChars(string, 0);
-        this->argv[i] = strdup(rawString);
+        this->args.push_back(strdup(rawString));
         env->ReleaseStringUTFChars(string, rawString);
     }
 }

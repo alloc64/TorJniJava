@@ -12,7 +12,7 @@
 
 TorClient* TorClient::instance = nullptr;
 
-jstring TorClient::version(JNIEnv *env, jobject thiz) {
+jstring TorClient::torVersion(JNIEnv *env, jobject thiz) {
     return env->NewStringUTF(tor_api_get_provider_version());
 }
 
@@ -53,7 +53,7 @@ int TorClient::setupTorControlSocket(JNIEnv *env, jobject thiz) {
     return torControlSocket;
 }
 
-bool TorClient::setCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv) {
+bool TorClient::setTorCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv) {
     auto torConfig = getInstance()->getTorConfig();
     if (torConfig == nullptr) {
         Logger::e(TAG, "Config must be first created, to use this method.");
@@ -86,7 +86,7 @@ bool TorClient::setCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv) 
     return true;
 }
 
-void TorClient::startInternal(JNIEnv *env, jobject thiz) {
+void TorClient::startTor(JNIEnv *env, jobject thiz) {
     getInstance()->start();
 }
 

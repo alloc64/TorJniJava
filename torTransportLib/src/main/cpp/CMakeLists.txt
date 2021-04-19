@@ -151,4 +151,4 @@ target_link_libraries(zeroprism pdnsd libancillary badvpn ${torlib} ${androidlog
 #
 # build hardening
 #
-target_compile_options(zeroprism PRIVATE "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O3>")
+# target_compile_options(zeroprism PRIVATE "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O3>")

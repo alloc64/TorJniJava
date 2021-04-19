@@ -10,7 +10,7 @@ void ProcessInThread::start() {
     }
 
     this->running = true;
-    std::thread t(&ProcessInThread::start, this);
+    std::thread t(&ProcessInThread::run, this);
 }
 
 void ProcessInThread::terminate() {

@@ -341,7 +341,7 @@ static void udpgw_client_handler_received (void *unused, BAddr local_addr, BAddr
 void runTun2Socks(int vpnInterfaceFileDescriptor, int vpnInterfaceMTU, const char *vpnIpAddressStr, const char *vpnNetMaskStr, const char *socksServerAddressStr,
                    const char *udpgwServerAddressStr, int udpgwTransparentDNS) {
 
-    init_arguments("SkVpnProvider");
+    init_arguments("Tun2");
 
     options.netif_ipaddr = (char*)vpnIpAddressStr;
     options.netif_netmask = (char*)vpnNetMaskStr;

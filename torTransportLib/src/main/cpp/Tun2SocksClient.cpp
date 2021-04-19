@@ -4,10 +4,10 @@
 
 Tun2SocksClient* Tun2SocksClient::instance = nullptr;
 
-void Tun2SocksClient::runTun2SocksInterface(JNIEnv *env, jobject thiz, jint vpnInterfaceFileDescriptor,
-                                       jint vpnInterfaceMTU, jstring vpnIpAddress,
-                                       jstring vpnNetMask, jstring socksServerAddress,
-                                       jstring udpgwServerAddress, jint udpgwTransparentDNS) {
+void Tun2SocksClient::createInterface(JNIEnv *env, jobject thiz, jint vpnInterfaceFileDescriptor,
+                                      jint vpnInterfaceMTU, jstring vpnIpAddress,
+                                      jstring vpnNetMask, jstring socksServerAddress,
+                                      jstring udpgwServerAddress, jint udpgwTransparentDNS) {
     getInstance()->setArguments(vpnInterfaceFileDescriptor,
                                 vpnInterfaceMTU, vpnIpAddress,
                                 vpnNetMask, socksServerAddress,
@@ -20,7 +20,7 @@ void Tun2SocksClient::run() {
                  socksServerAddress, udpgwServerAddress, udpgwTransparentDNS);
 }
 
-void Tun2SocksClient::destroyTun2SocksInterface(JNIEnv *env, jobject thiz) {
+void Tun2SocksClient::destroyInterface(JNIEnv *env, jobject thiz) {
     terminateTun2Socks();
 }
 

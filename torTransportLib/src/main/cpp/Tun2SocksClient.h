@@ -8,10 +8,9 @@
 
 class Tun2SocksClient : public JNIAware, public ProcessInThread {
 public:
-    //TODO: trampoline + rename native methods to something not useful
-    Tun2SocksClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/Transport", (JNINativeMethod[]) {
-            {"runTun2SocksInterface",     "(IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) (&Tun2SocksClient::runTun2SocksInterface)},
-            {"destroyTun2SocksInterface", "()V",                                                                            (void *) (&Tun2SocksClient::destroyTun2SocksInterface)},
+    Tun2SocksClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
+            {"a10", "(IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) (&Tun2SocksClient::createInterface)},
+            {"a11", "()V",                                                                            (void *) (&Tun2SocksClient::destroyInterface)},
 
     }) {
         this->instance = this;
@@ -22,12 +21,12 @@ private:
         return instance;
     }
 
-    static void runTun2SocksInterface(
+    static void createInterface(
             JNIEnv *env, jobject thiz, jint vpnInterfaceFileDescriptor, jint vpnInterfaceMTU,
             jstring vpnIpAddress, jstring vpnNetMask, jstring socksServerAddress,
             jstring udpgwServerAddress, jint udpgwTransparentDNS);
 
-    static void destroyTun2SocksInterface(JNIEnv *env, jobject thiz);
+    static void destroyInterface(JNIEnv *env, jobject thiz);
 
 protected:
     void run() override;
@@ -40,10 +39,10 @@ private:
 
     jint vpnInterfaceFileDescriptor;
     jint vpnInterfaceMTU;
-    const char* vpnIpAddress;
-    const char*  vpnNetMask;
-    const char*  socksServerAddress;
-    const char*  udpgwServerAddress;
+    const char *vpnIpAddress;
+    const char *vpnNetMask;
+    const char *socksServerAddress;
+    const char *udpgwServerAddress;
     jint udpgwTransparentDNS;
 
     static Tun2SocksClient *instance;

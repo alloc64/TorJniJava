@@ -45,6 +45,13 @@ volatile int udp_socket=-1;
 sigset_t sigs_msk;
 char *conf_file=CONFDIR"/pdnsd.conf";
 
+#ifdef ANDROID
+#include <android/log.h>
+#define fprintf(ignored, ...)  __android_log_print(ANDROID_LOG_ERROR, "PDNS", ##__VA_ARGS__)
+
+#define exit(ignored) fprintf(stderr, "An exit was called.");
+
+#endif // ANDROID
 
 
 /* These are some init steps we have to call before we get daemon on linux, but need

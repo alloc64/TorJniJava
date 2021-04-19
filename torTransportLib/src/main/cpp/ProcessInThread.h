@@ -17,7 +17,7 @@ protected:
     virtual void run() = 0;
 
 private:
-    bool running;
+    bool running = false;
 };
 
 

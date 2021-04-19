@@ -5,20 +5,20 @@
 
 #define TAG "zeroprism/JNI"
 
-JNIAware::JNIAware(JNIEnv *env, const char* className, JNINativeMethod *methods) {
+JNIAware::JNIAware(JNIEnv *env, const char* className, std::vector<JNINativeMethod> methods) {
     this->env = env;
 
-    registerNativeMethods(className, methods, sizeof(methods) / sizeof(methods[0])); //TODO: overit
+    registerNativeMethods(className, methods);
 }
 
-int JNIAware::registerNativeMethods(const char* className, JNINativeMethod *methods, int numMethods) {
+int JNIAware::registerNativeMethods(const char* className, std::vector<JNINativeMethod> methods) {
     jclass clazz;
     clazz = env->FindClass(className);
     if (clazz == nullptr) {
         Logger::e(TAG, "Native method registration failed. Unable to find class %s", className);
         return JNI_FALSE;
     }
-    if (env->RegisterNatives(clazz, methods, numMethods) < 0) {
+    if (env->RegisterNatives(clazz, methods.data(), methods.size()) < 0) {
         Logger::e(TAG, "Native method registration failed for class %s", className);
         return JNI_FALSE;
     }

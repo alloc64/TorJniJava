@@ -2,8 +2,11 @@ package org.zeroprism;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.widget.TextView;
+
+import java.io.IOException;
 
 public class MainActivity extends Activity
 {
@@ -18,15 +21,17 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Transport t = new Transport();
+        JNIBridge t = new JNIBridge();
 
         // Example of a call to a native method
         TextView tv = findViewById(R.id.sample_text);
-        tv.setText(t.version());
+        tv.setText(t.getTor().getTorVersion());
 
         try
         {
-            t.test(this);
+            JNIBridge.Pdnsd pdnsd = t.getPdnsd();
+
+            pdnsd.startDnsd(new String[]{"", "-c", pdnsd.createPdnsdConf(getFilesDir(), "1.1.1.1", 53, "127.0.0.1", 9091).toString(), "-g", "-v2"});
         }
         catch (Exception e)
         {

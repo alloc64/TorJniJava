@@ -3,13 +3,13 @@
 
 #include "JNIAware.h"
 #include "ProcessInThread.h"
+#include <vector>
 
 class PdnsdClient : public JNIAware, ProcessInThread {
 public:
-    //TODO: trampoline + rename native methods to something not useful
-    PdnsdClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/Transport", (JNINativeMethod[]) {
-            {"runDnsd",     "([Ljava/lang/String;)V", (void *) (PdnsdClient::runDnsd)},
-            {"destroyDnsd", "()V",                    (void *) (PdnsdClient::destroyDnsd)},
+    PdnsdClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
+            {"a8", "([Ljava/lang/String;)V", (void *) (PdnsdClient::startDnsd)},
+            {"a9", "()V",                    (void *) (PdnsdClient::destroyDnsd)},
     }) {
         this->instance = this;
     }
@@ -22,7 +22,7 @@ private:
         return instance;
     }
 
-    static void runDnsd(JNIEnv *env, jobject thiz, jobjectArray argv);
+    static void startDnsd(JNIEnv *env, jobject thiz, jobjectArray argv);
 
     static void destroyDnsd(JNIEnv *env, jobject thiz);
 
@@ -30,8 +30,7 @@ private:
 
     void setArguments(jobjectArray pArray);
 
-    jsize argc;
-    char **argv;
+    std::vector<const char*> args;
 };
 
 

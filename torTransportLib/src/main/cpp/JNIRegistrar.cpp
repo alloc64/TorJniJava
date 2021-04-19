@@ -31,4 +31,6 @@ int JNIRegistrar::registerWithJNI(JNIEnv *env) {
     new TorClient(env);
     new PdnsdClient(env);
     new Tun2SocksClient(env);
+
+    return JNI_TRUE;
 }

@@ -11,18 +11,14 @@ class TorClient :
         public JNIAware,
         public ProcessInThread {
 public:
-    //TODO: trampoline + rename native methods to something not useful
-    TorClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/Transport", (JNINativeMethod[]) {
-            {"createTorConfiguration",          "()Z",                                          (void *) (TorClient::createTorConfig)},
-            {"mainConfigurationFree",           "()V",                                          (void *) (TorClient::destroyTorConfig)},
-
-            {"setupControlSocket",              "()Z",                                          (void *) (TorClient::setupTorControlSocket)},
-
-            {"mainConfigurationSetCommandLine", "([Ljava/lang/String;)Z",                       (void *) (TorClient::setCommandLine)},
-
-            {"prepareFileDescriptor",           "(Ljava/lang/String;)Ljava/io/FileDescriptor;", (void *) (TorClient::prepareFileDescriptor)},
-            {"version",                         "()Ljava/lang/String;",                         (void *) (TorClient::version)},
-            {"runMain",                         "()V",                                          (void *) (TorClient::startInternal)},
+    TorClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
+            {"a1", "()Ljava/lang/String;",                         (void *) (TorClient::torVersion)},
+            {"a2", "()Z",                                          (void *) (TorClient::createTorConfig)},
+            {"a3", "()V",                                          (void *) (TorClient::destroyTorConfig)},
+            {"a4", "()I",                                          (void *) (TorClient::setupTorControlSocket)},
+            {"a5", "([Ljava/lang/String;)Z",                       (void *) (TorClient::setTorCommandLine)},
+            {"a6", "(Ljava/lang/String;)Ljava/io/FileDescriptor;", (void *) (TorClient::prepareFileDescriptor)},
+            {"a7", "()V",                                          (void *) (TorClient::startTor)},
     }) {
         this->instance = this;
     }
@@ -32,7 +28,7 @@ private:
         return instance;
     }
 
-    static jstring version(JNIEnv *env, jobject thiz);
+    static jstring torVersion(JNIEnv *env, jobject thiz);
 
     static bool createTorConfig(JNIEnv *env, jobject thiz);
 
@@ -40,9 +36,9 @@ private:
 
     static int setupTorControlSocket(JNIEnv *env, jobject thiz);
 
-    static bool setCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv);
+    static bool setTorCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv);
 
-    static void startInternal(JNIEnv *env, jobject thiz);
+    static void startTor(JNIEnv *env, jobject thiz);
 
     static jobject prepareFileDescriptor(JNIEnv *env, jclass thiz, jstring arg);
 
