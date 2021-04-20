@@ -3,10 +3,19 @@ package org.zeroprism;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
+
+import org.zeroprism.http.TorOkhttp3;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.util.concurrent.Executors;
+
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends Activity
 {
@@ -45,12 +54,43 @@ public class MainActivity extends Activity
                     "--Log", "notice syslog",
                     "--SOCKSPort", "127.0.0.1:9050",
                     "--RunAsDaemon", "0",
-                    "--DataDirectory", torDataDirectory.toString()
+                    "--DataDirectory", torDataDirectory.toString(),
+                    "--SafeLogging", "0"
             });
 
             int controlSocket = tor.setupTorControlSocket();
 
             tor.startTor();
+
+            Executors.newSingleThreadExecutor().execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            Thread.sleep(10_000);
+
+                            OkHttpClient http = TorOkhttp3.create().build();
+
+                            Call call = http.newCall(new Request.Builder()
+                                    .url("https://ipinfo.io/json")
+                                    .build());
+
+                            Response response = call.execute();
+
+                            if (response.isSuccessful())
+                                Log.i("IP test", response.body().string());
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
 
             //FileDescriptor vpnFileDescriptor = tor.prepareFileDescriptor("vpn_fd0");
 
