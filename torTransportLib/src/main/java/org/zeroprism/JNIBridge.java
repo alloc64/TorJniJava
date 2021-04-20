@@ -156,6 +156,11 @@ public class JNIBridge
         return pdnsd;
     }
 
+    public Tun2Socks getTun2Socks()
+    {
+        return tun2Socks;
+    }
+
     // region Tor native methods
 
     public native String a1();

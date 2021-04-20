@@ -30,6 +30,8 @@ bool TorClient::createTorConfig(JNIEnv *env, jobject thiz) {
         return false;
     }
 
+    getInstance()->setTorConfig(torConfig);
+
     return true;
 }
 
@@ -78,7 +80,7 @@ bool TorClient::setTorCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArg
         env->DeleteLocalRef(argElem);
     }
 
-    if (tor_main_configuration_set_command_line(torConfig, argc, argv)) {
+    if (tor_main_configuration_set_command_line(torConfig, argc, argv) < 0) {
         Logger::e(TAG,  "Unable to set cmd config.");
         return false;
     }
