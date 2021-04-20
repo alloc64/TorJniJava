@@ -31,7 +31,7 @@ public class MainActivity extends Activity
         {
             JNIBridge.Pdnsd pdnsd = t.getPdnsd();
 
-            pdnsd.startDnsd(new String[]{"", "-c", pdnsd.createPdnsdConf(getFilesDir(), "1.1.1.1", 53, "127.0.0.1", 9091).toString(), "-g", "-v2"});
+            pdnsd.startDnsd(new String[]{"", "-c", pdnsd.createPdnsdConf(getFilesDir(), "1.1.1.1", 53, "127.0.0.1", 9091).toString(), "-g", "-v2", "--nodaemon"});
         }
         catch (Exception e)
         {

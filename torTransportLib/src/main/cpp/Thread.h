@@ -3,21 +3,21 @@
 
 #include <thread>
 
-class ProcessInThread {
+class Thread {
 
 public:
     virtual void start();
     virtual void terminate();
 
     bool isRunning(){
-        return running;
+        return thread != nullptr;
     }
 
 protected:
     virtual void run() = 0;
 
 private:
-    bool running = false;
+    std::thread *thread = nullptr;
 };
 
 

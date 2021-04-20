@@ -2,10 +2,10 @@
 #define PDNSDCLIENT_H
 
 #include "JNIAware.h"
-#include "ProcessInThread.h"
+#include "Thread.h"
 #include <vector>
 
-class PdnsdClient : public JNIAware, ProcessInThread {
+class PdnsdClient : public JNIAware, Thread {
 public:
     PdnsdClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
             {"a8", "([Ljava/lang/String;)V", (void *) (PdnsdClient::startDnsd)},

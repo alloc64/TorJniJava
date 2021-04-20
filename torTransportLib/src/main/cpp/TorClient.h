@@ -3,13 +3,13 @@
 
 #include <tor_api.h>
 #include "JNIAware.h"
-#include "ProcessInThread.h"
+#include "Thread.h"
 
 #define TAG "zeroprism/TC"
 
 class TorClient :
         public JNIAware,
-        public ProcessInThread {
+        public Thread {
 public:
     TorClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
             {"a1", "()Ljava/lang/String;",                         (void *) (TorClient::torVersion)},
