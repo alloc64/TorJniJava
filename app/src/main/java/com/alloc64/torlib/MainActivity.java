@@ -10,9 +10,11 @@ import android.widget.TextView;
 import com.alloc64.jni.TLJNIBridge;
 
 import com.alloc64.http.TorOkhttp3;
+import com.alloc64.torlib.control.TorControlConnection;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 import okhttp3.Call;
@@ -22,6 +24,8 @@ import okhttp3.Response;
 
 public class MainActivity extends Activity
 {
+    private TorControlConnection torControlConnection;
+
     static
     {
         System.loadLibrary("transport");
@@ -56,7 +60,55 @@ public class MainActivity extends Activity
 
             ParcelFileDescriptor controlSocket = tor.setupTorControlSocket();
 
+            this.torControlConnection = TorControlConnection.create(controlSocket, new TorControlConnection.EventHandler()
+            {
+                @Override
+                public void circuitStatus(String status, String circID, String path)
+                {
+
+                }
+
+                @Override
+                public void streamStatus(String status, String streamID, String target)
+                {
+
+                }
+
+                @Override
+                public void orConnStatus(String status, String orName)
+                {
+
+                }
+
+                @Override
+                public void bandwidthUsed(long read, long written)
+                {
+
+                }
+
+                @Override
+                public void newDescriptors(List<String> orList)
+                {
+
+                }
+
+                @Override
+                public void message(String severity, String msg)
+                {
+
+                }
+
+                @Override
+                public void unrecognized(String type, String msg)
+                {
+
+                }
+            });
+
             tor.startTor();
+
+            torControlConnection.start();
+            torControlConnection.sendAndWaitForResponse("OFF", null);
 
             Executors.newSingleThreadExecutor().execute(() ->
             {
