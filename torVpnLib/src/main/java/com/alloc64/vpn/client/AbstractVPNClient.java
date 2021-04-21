@@ -46,8 +46,6 @@ public class AbstractVPNClient
 
 	private VPNConnectionState state = VPNConnectionState.Disconnected;
 
-	private VPNSocketAddress tmpSocketAddress = null;
-
 	private int tmpProtocolType = 0;
 
 	private ServiceConnection serviceConnection = new ServiceConnection()
@@ -115,17 +113,11 @@ public class AbstractVPNClient
 		}
 	}
 
-	public void connect(Activity activity, VPNSocketAddress socketAddress, int protocolType)
+	public void connect(Activity activity, int protocolType)
 	{
 		if(activity == null)
 		{
 			onError(VPNError.NoContext);
-			return;
-		}
-
-		if(socketAddress == null)
-		{
-			onError(VPNError.InvalidAddress);
 			return;
 		}
 
@@ -135,7 +127,6 @@ public class AbstractVPNClient
 
 		if (intent != null)
 		{
-			this.tmpSocketAddress = socketAddress;
 			this.tmpProtocolType = protocolType;
 
 			try
@@ -152,14 +143,14 @@ public class AbstractVPNClient
 		else
 		{
 			intent = new Intent();
-			intent.putExtra(SOCKET_ADDRESS, socketAddress);
+			//intent.putExtra(SOCKET_ADDRESS, socketAddress);
 			intent.putExtra(PROTOCOL_TYPE, protocolType);
 
 			onActivityResult(activity, rc, RESULT_OK, intent);
 		}
 	}
 
-	protected void onVPNPrepared(Activity activity, VPNSocketAddress socketAddress, int protocolType)
+	protected void onVPNPrepared(Activity activity, int protocolType)
 	{
 	}
 
@@ -174,26 +165,25 @@ public class AbstractVPNClient
 		{
 			if (requestCode == CONNECT_REQUEST_CODE)
 			{
-				VPNSocketAddress socketAddress = tmpSocketAddress;
 				int protocolType = tmpProtocolType;
 
-				if(socketAddress == null || protocolType <= 0)
+				if(protocolType <= 0)
 				{
 					if(data != null)
 					{
-						socketAddress = (VPNSocketAddress) data.getSerializableExtra(SOCKET_ADDRESS);
-						protocolType = data.getIntExtra(PROTOCOL_TYPE, VPNProtocolType.DTLS);
+						//socketAddress = (VPNSocketAddress) data.getSerializableExtra(SOCKET_ADDRESS);
+						//protocolType = data.getIntExtra(PROTOCOL_TYPE, VPNProtocolType.DTLS);
 					}
 				}
 				else
 				{
-					tmpSocketAddress = null;
+					//tmpSocketAddress = null;
 					tmpProtocolType = 0;
 				}
 
 				if (resultCode == RESULT_OK)
 				{
-					onVPNPrepared(activity, socketAddress, protocolType);
+					onVPNPrepared(activity, protocolType);
 				}
 				else
 				{

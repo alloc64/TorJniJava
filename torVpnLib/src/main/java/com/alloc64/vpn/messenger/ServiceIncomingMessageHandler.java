@@ -10,7 +10,9 @@ import androidx.annotation.Nullable;
 
 public abstract class ServiceIncomingMessageHandler extends Handler
 {
-    private Service service;
+    private static final String TAG = ServiceIncomingMessageHandler.class.toString();
+
+    private final Service service;
 
     private Messenger clientMessenger;
 
@@ -39,7 +41,7 @@ public abstract class ServiceIncomingMessageHandler extends Handler
     {
         if(msg == null)
         {
-            Log.e(Config.tag, "Received invalid handler message");
+            Log.e(TAG, "Received invalid handler message");
             return;
         }
 
