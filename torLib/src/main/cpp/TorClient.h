@@ -11,7 +11,7 @@ class TorClient :
         public JNIAware,
         public Thread {
 public:
-    TorClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
+    TorClient(JNIEnv *env) : JNIAware(env, "com/alloc64/jni/TLJNIBridge", std::vector<JNINativeMethod> {
             {"a1", "()Ljava/lang/String;",                         (void *) (TorClient::torVersion)},
             {"a2", "()Z",                                          (void *) (TorClient::createTorConfig)},
             {"a3", "()V",                                          (void *) (TorClient::destroyTorConfig)},

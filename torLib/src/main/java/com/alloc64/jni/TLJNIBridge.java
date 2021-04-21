@@ -9,28 +9,28 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Locale;
 
-public class JNIBridge
+public class TLJNIBridge
 {
     public class Tor
     {
         public String getTorVersion()
         {
-            return jniTrampoline.call(JNIBridge.this::a1);
+            return jniTrampoline.call(TLJNIBridge.this::a1);
         }
 
         public boolean createTorConfig()
         {
-            return jniTrampoline.call(JNIBridge.this::a2);
+            return jniTrampoline.call(TLJNIBridge.this::a2);
         }
 
         public void destroyTorConfig()
         {
-            jniTrampoline.call(JNIBridge.this::a3);
+            jniTrampoline.call(TLJNIBridge.this::a3);
         }
 
         public int setupTorControlSocket()
         {
-            return jniTrampoline.call(JNIBridge.this::a4);
+            return jniTrampoline.call(TLJNIBridge.this::a4);
         }
 
         public boolean setTorCommandLine(String[] args)
@@ -45,7 +45,7 @@ public class JNIBridge
 
         public void startTor()
         {
-            jniTrampoline.call(JNIBridge.this::a7);
+            jniTrampoline.call(TLJNIBridge.this::a7);
         }
     }
 
@@ -116,7 +116,7 @@ public class JNIBridge
 
         public void destroyDnsd()
         {
-            jniTrampoline.call(JNIBridge.this::a9);
+            jniTrampoline.call(TLJNIBridge.this::a9);
         }
     }
 
@@ -131,12 +131,12 @@ public class JNIBridge
                 String udpgwServerAddress,
                 int udpgwTransparentDNS)
         {
-            jniTrampoline.call(() -> JNIBridge.this.a10(vpnInterfaceFileDescriptor, vpnInterfaceMTU, vpnIpAddress, vpnNetMask, socksServerAddress, udpgwServerAddress, udpgwTransparentDNS));
+            jniTrampoline.call(() -> TLJNIBridge.this.a10(vpnInterfaceFileDescriptor, vpnInterfaceMTU, vpnIpAddress, vpnNetMask, socksServerAddress, udpgwServerAddress, udpgwTransparentDNS));
         }
 
         public void destroyInterface()
         {
-            jniTrampoline.call(JNIBridge.this::a11);
+            jniTrampoline.call(TLJNIBridge.this::a11);
         }
     }
 

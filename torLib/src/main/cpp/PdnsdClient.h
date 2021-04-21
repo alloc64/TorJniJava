@@ -7,7 +7,7 @@
 
 class PdnsdClient : public JNIAware, Thread {
 public:
-    PdnsdClient(JNIEnv *env) : JNIAware(env, "org/zeroprism/JNIBridge", std::vector<JNINativeMethod> {
+    PdnsdClient(JNIEnv *env) : JNIAware(env, "com/alloc64/jni/TLJNIBridge", std::vector<JNINativeMethod> {
             {"a8", "([Ljava/lang/String;)V", (void *) (PdnsdClient::startDnsd)},
             {"a9", "()V",                    (void *) (PdnsdClient::destroyDnsd)},
     }) {

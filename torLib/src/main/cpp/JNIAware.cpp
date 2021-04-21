@@ -3,7 +3,7 @@
 #include "Logger.h"
 #include "JNIAware.h"
 
-#define TAG "zeroprism/JNI"
+#define TAG "tl/JNI"
 
 JNIAware::JNIAware(JNIEnv *env, const char* className, std::vector<JNINativeMethod> methods) {
     this->env = env;

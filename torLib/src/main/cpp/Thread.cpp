@@ -1,7 +1,7 @@
 #include "Logger.h"
 #include "Thread.h"
 
-#define TAG "zeroprism/Process"
+#define TAG "tl/Process"
 
 void Thread::start() {
     if(isRunning()) {

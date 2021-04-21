@@ -6,10 +6,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
-import com.alloc64.jni.JNIBridge;
+import com.alloc64.jni.TLJNIBridge;
 
 import com.alloc64.http.TorOkhttp3;
-import com.alloc64.libtor.test.R;
 
 import java.io.File;
 import java.util.concurrent.Executors;
@@ -32,7 +31,7 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        JNIBridge bridge = new JNIBridge();
+        TLJNIBridge bridge = new TLJNIBridge();
 
         // Example of a call to a native method
         TextView tv = findViewById(R.id.sample_text);
@@ -44,8 +43,8 @@ public class MainActivity extends Activity
             File torDataDirectory = new File(filesDir, "/transport");
             torDataDirectory.mkdir();
 
-            JNIBridge.Tor tor = bridge.getTor();
-            JNIBridge.Pdnsd pdnsd = bridge.getPdnsd();
+            TLJNIBridge.Tor tor = bridge.getTor();
+            TLJNIBridge.Pdnsd pdnsd = bridge.getPdnsd();
 
             if(!tor.createTorConfig())
                 throw new IllegalStateException("Unable to create transport config.");
