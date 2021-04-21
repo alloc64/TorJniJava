@@ -1,12 +1,7 @@
-package org.zeroprism.http;
+package com.alloc64.http;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.net.Socket;
-
-import javax.net.SocketFactory;
 
 import okhttp3.OkHttpClient;
 

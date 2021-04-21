@@ -3,7 +3,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 17)
 
-project("zeroprism")
+project("transport")
 
 #
 # tor - precompiled .so
@@ -135,9 +135,9 @@ find_library(androidlog log)
 find_library(dllib dl)
 
 #
-# zeroprism
+# transport
 #
-add_library(zeroprism SHARED
+add_library(transport SHARED
         JNIRegistrar.cpp
         JNIAware.cpp
         Logger.cpp
@@ -145,10 +145,10 @@ add_library(zeroprism SHARED
         PdnsdClient.cpp
         Thread.cpp
         Tun2SocksClient.cpp)
-target_include_directories(zeroprism PRIVATE "tor" "pdnsd" "tun2socks")
-target_link_libraries(zeroprism pdnsd libancillary badvpn ${torlib} ${androidlog} ${dllib})
+target_include_directories(transport PRIVATE "tor" "pdnsd" "tun2socks")
+target_link_libraries(transport pdnsd libancillary badvpn ${torlib} ${androidlog} ${dllib})
 
 #
 # build hardening
 #
-# target_compile_options(zeroprism PRIVATE "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O3>")
+# target_compile_options(transport PRIVATE "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O3>")

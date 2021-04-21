@@ -1,4 +1,4 @@
-package org.zeroprism;
+package com.alloc64.torlib;
 
 public class JNITrampoline
 {

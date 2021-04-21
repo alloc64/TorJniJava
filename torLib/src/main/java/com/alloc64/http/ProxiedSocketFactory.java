@@ -1,4 +1,4 @@
-package org.zeroprism.http;
+package com.alloc64.http;
 
 import java.io.IOException;
 import java.net.InetAddress;

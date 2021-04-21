@@ -1,4 +1,4 @@
-package org.zeroprism;
+package com.alloc64.torlib;
 
 
 import android.app.Activity;
@@ -6,10 +6,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
-import org.zeroprism.http.TorOkhttp3;
+import com.alloc64.jni.JNIBridge;
+
+import com.alloc64.http.TorOkhttp3;
+import com.alloc64.libtor.test.R;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.util.concurrent.Executors;
 
 import okhttp3.Call;
@@ -21,7 +23,7 @@ public class MainActivity extends Activity
 {
     static
     {
-        System.loadLibrary("zeroprism");
+        System.loadLibrary("transport");
     }
 
     @Override

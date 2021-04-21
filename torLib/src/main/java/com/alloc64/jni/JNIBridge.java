@@ -1,6 +1,6 @@
-package org.zeroprism;
+package com.alloc64.jni;
 
-import android.content.Context;
+import com.alloc64.torlib.JNITrampoline;
 
 import java.io.File;
 import java.io.FileDescriptor;

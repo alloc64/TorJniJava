@@ -7,7 +7,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId "org.zeroprism"
+        applicationId "com.alloc64.torlib.test"
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
@@ -27,5 +27,5 @@ android {
 }
 
 dependencies {
-    implementation project(":torTransportLib")
+    implementation project(':torLib')
 }
