@@ -3,6 +3,7 @@ package com.alloc64.torlib;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -11,6 +12,7 @@ import com.alloc64.jni.TLJNIBridge;
 import com.alloc64.http.TorOkhttp3;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.util.concurrent.Executors;
 
 import okhttp3.Call;
@@ -49,46 +51,35 @@ public class MainActivity extends Activity
             if(!tor.createTorConfig())
                 throw new IllegalStateException("Unable to create transport config.");
 
-            tor.setTorCommandLine(new String[] {
-                    "tor",
-                    "--allow-missing-torrc",
-                    "--Log", "notice syslog",
-                    "--SOCKSPort", "127.0.0.1:9050",
-                    "--RunAsDaemon", "0",
-                    "--DataDirectory", torDataDirectory.toString(),
-                    "--SafeLogging", "0"
-            });
+            tor.setTorCommandLine(TorConfig.defaultConfig()
+                    .setDataDirectory(torDataDirectory));
 
-            int controlSocket = tor.setupTorControlSocket();
+            ParcelFileDescriptor controlSocket = tor.setupTorControlSocket();
 
             tor.startTor();
 
-            Executors.newSingleThreadExecutor().execute(new Runnable()
+            Executors.newSingleThreadExecutor().execute(() ->
             {
-                @Override
-                public void run()
+                while (true)
                 {
-                    while (true)
+                    try
                     {
-                        try
-                        {
-                            Thread.sleep(10_000);
+                        Thread.sleep(10_000);
 
-                            OkHttpClient http = TorOkhttp3.create().build();
+                        OkHttpClient http = TorOkhttp3.create().build();
 
-                            Call call = http.newCall(new Request.Builder()
-                                    .url("https://ipinfo.io/json")
-                                    .build());
+                        Call call = http.newCall(new Request.Builder()
+                                .url("https://ipinfo.io/json")
+                                .build());
 
-                            Response response = call.execute();
+                        Response response = call.execute();
 
-                            if (response.isSuccessful())
-                                Log.i("IP test", response.body().string());
-                        }
-                        catch (Exception e)
-                        {
-                            e.printStackTrace();
-                        }
+                        if (response.isSuccessful())
+                            Log.i("IP test", response.body().string());
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
                     }
                 }
             });

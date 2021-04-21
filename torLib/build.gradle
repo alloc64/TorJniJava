@@ -47,4 +47,7 @@ android {
 
 dependencies {
     api 'com.squareup.okhttp3:okhttp-urlconnection:3.8.1'
+
+    api 'commons-io:commons-io:2.6'
+    api 'org.apache.commons:commons-lang3:3.4'
 }

@@ -1,5 +1,9 @@
-package com.alloc64.torlib;
+package com.alloc64.jni;
 
+/**
+ * Used for proxying native method calls, so disassembly looks more confusing for first time.
+ * However, this may get optimized out by R8 anyway.
+ */
 public class JNITrampoline
 {
     public interface Callable<V>

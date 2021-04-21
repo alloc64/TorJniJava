@@ -1,6 +1,8 @@
 package com.alloc64.jni;
 
-import com.alloc64.torlib.JNITrampoline;
+import android.os.ParcelFileDescriptor;
+
+import com.alloc64.torlib.TorConfig;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -28,14 +30,21 @@ public class TLJNIBridge
             jniTrampoline.call(TLJNIBridge.this::a3);
         }
 
-        public int setupTorControlSocket()
+        public ParcelFileDescriptor setupTorControlSocket() throws IOException
         {
-            return jniTrampoline.call(TLJNIBridge.this::a4);
+            int fd = jniTrampoline.call(TLJNIBridge.this::a4);
+
+            return ParcelFileDescriptor.fromFd(fd);
         }
 
         public boolean setTorCommandLine(String[] args)
         {
             return jniTrampoline.call(() -> a5(args));
+        }
+
+        public void setTorCommandLine(TorConfig torConfig)
+        {
+            setTorCommandLine(torConfig.asCommands());
         }
 
         public FileDescriptor prepareFileDescriptor(String path)
