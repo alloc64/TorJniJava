@@ -1,126 +1,97 @@
 package com.alloc64.jni;
 
-import android.os.ParcelFileDescriptor;
-
+import com.alloc64.http.ProxiedSocketFactory;
+import com.alloc64.torlib.PdnsdConfig;
 import com.alloc64.torlib.TorConfig;
+import com.alloc64.torlib.control.PasswordDigest;
+import com.alloc64.torlib.control.TorControlSocket;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.Locale;
+
+import okhttp3.OkHttpClient;
 
 public class TLJNIBridge
 {
     public class Tor
     {
+        private TorControlSocket contorlPortSocket;
+
         public String getTorVersion()
         {
             return jniTrampoline.call(TLJNIBridge.this::a1);
         }
 
-        public boolean createTorConfig()
+        public Tor createTorConfig() throws IllegalStateException
         {
-            return jniTrampoline.call(TLJNIBridge.this::a2);
+            if (!jniTrampoline.call(TLJNIBridge.this::a2))
+                throw new IllegalStateException("Unable to create transport config.");
+
+            return this;
         }
 
-        public void destroyTorConfig()
+        public Tor destroyTorConfig()
         {
             jniTrampoline.call(TLJNIBridge.this::a3);
+            return this;
         }
 
-        public ParcelFileDescriptor setupTorControlSocket() throws IOException
+        public Tor setTorCommandLine(String[] args)
         {
-            int fd = jniTrampoline.call(TLJNIBridge.this::a4);
+            if (!jniTrampoline.call(() -> a5(args)))
+                throw new IllegalStateException("Unable to set command line arguments.");
 
-            return ParcelFileDescriptor.fromFd(fd);
+            return this;
         }
 
-        public boolean setTorCommandLine(String[] args)
-        {
-            return jniTrampoline.call(() -> a5(args));
-        }
-
-        public void setTorCommandLine(TorConfig torConfig)
+        public Tor setTorCommandLine(TorConfig torConfig)
         {
             setTorCommandLine(torConfig.asCommands());
+            return this;
         }
 
-        public FileDescriptor prepareFileDescriptor(String path)
+        public Tor attachControlPort(InetSocketAddress socketAddress, PasswordDigest password, TorControlSocket.TorEventHandler eventHandler)
         {
-            return jniTrampoline.call(() -> a6(path));
+            this.contorlPortSocket = new TorControlSocket(password, eventHandler);
+            contorlPortSocket.connect(socketAddress);
+
+            return this;
         }
 
-        public void startTor()
+        public Tor startTor()
         {
-            jniTrampoline.call(TLJNIBridge.this::a7);
+            jniTrampoline.call(TLJNIBridge.this::a6);
+            return this;
+        }
+
+        public OkHttpClient.Builder createOkHttpClient(InetSocketAddress socketAddress)
+        {
+            Proxy proxy = new Proxy(Proxy.Type.SOCKS, socketAddress);
+
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            builder.socketFactory(new ProxiedSocketFactory(proxy));
+            builder.proxy(proxy);
+
+            return builder;
         }
     }
 
     public class Pdnsd
     {
-        public File createPdnsdConf(File fileDir, String torDnsHost, int torDnsPort, String pdnsdHost, int pdnsdPort) throws IOException
-        {
-            String PDNS_CONF = "global {\n" +
-                    "\tperm_cache=0;\n" +
-                    "\tcache_dir=\"%3$s\";\n" +
-                    "\tserver_port = %5$d;\n" +
-                    "\tserver_ip = %4$s;\n" +
-                    "\tquery_method=udp_only;\n" +
-                    "\tmin_ttl=1m;\n" +
-                    "\tmax_ttl=1w;\n" +
-                    "\ttimeout=10;\n" +
-                    "\tdaemon=on;\n" +
-                    "\tpid_file=\"%3$s/pdnsd.pid\";\n" +
-                    "\n" +
-                    "}\n" +
-                    "\n" +
-                    "server {\n" +
-                    "\tlabel= \"upstream\";\n" +
-                    "\tip = %1$s;\n" +
-                    "\tport = %2$d;\n" +
-                    "\tuptest = none;\n" +
-                    "}\n" +
-                    "\n" +
-                    "rr {\n" +
-                    "\tname=localhost;\n" +
-                    "\treverse=on;\n" +
-                    "\ta=127.0.0.1;\n" +
-                    "\towner=localhost;\n" +
-                    "\tsoa=localhost,root.localhost,42,86400,900,86400,86400;\n" +
-                    "}";
-
-            String conf = String.format(Locale.US,
-                    PDNS_CONF,
-                    torDnsHost,
-                    torDnsPort,
-                    fileDir.getCanonicalPath(),
-                    pdnsdHost,
-                    pdnsdPort
-            );
-
-            File fPid = new File(fileDir, pdnsdPort + "pdnsd.conf");
-
-            if (fPid.exists())
-                fPid.delete();
-
-            FileOutputStream fos = new FileOutputStream(fPid, false);
-            PrintStream ps = new PrintStream(fos);
-            ps.print(conf);
-            ps.close();
-
-            File cache = new File(fileDir, "pdnsd.cache");
-
-            if (!cache.exists())
-                cache.createNewFile();
-
-            return fPid;
-        }
-
-        public void startDnsd(String[] args)
+        public Pdnsd startDnsd(String[] args)
         {
             jniTrampoline.call(() -> a8(args));
+            return this;
+        }
+
+        public Pdnsd startDnsd(PdnsdConfig config)
+        {
+            return startDnsd(config.asCommands());
         }
 
         public void destroyDnsd()
@@ -178,13 +149,9 @@ public class TLJNIBridge
 
     public native void a3();
 
-    public native int a4();
-
     public native boolean a5(String[] args);
 
-    public native static FileDescriptor a6(String path);
-
-    public native void a7();
+    public native void a6();
 
     // endregion
 

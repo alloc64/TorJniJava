@@ -1,8 +1,11 @@
 package com.alloc64.torlib;
 
+import com.alloc64.torlib.control.PasswordDigest;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1756,12 +1759,13 @@ import java.util.List;
  * HiddenServiceDirectory/onion_service_non_anonymous
  * This file is present if a hidden service key was created in HiddenServiceNonAnonymousMode.
  */
-public class TorConfig
+public class TorConfig extends ArgConfig
 {
     private static final String ALLOW_MISSING_TORRC = "--allow-missing-torrc";
     private static final String CONTROL_PORT = "--ControlPort";
     private static final String COOKIE_AUTHENTICATION = "--CookieAuthentication";
     private static final String COOKIE_AUTH_FILE = "--CookieAuthFile";
+    private static final String HASHED_CONTROL_PASSWORD = "--HashedControlPassword";
     private static final String DATA_DIRECTORY = "--DataDirectory";
     private static final String HTTPS_PROXY = "--HTTPSProxy";
     private static final String HTTPS_PROXY_AUTHENTICATOR = "--HTTPSProxyAuthenticator";
@@ -1771,6 +1775,7 @@ public class TorConfig
     private static final String LOG = "--Log";
     private static final String RUN_AS_DAEMON = "--RunAsDaemon";
     private static final String SAFE_LOGGING = "--SafeLogging";
+    private static final String DORMANT_ON_FIRST_STARTUP = "--DormantOnFirstStartup";
 
     private static final String BRIDGE = "--Bridge";
     private static final String USE_BRIDGES = "--UseBridges";
@@ -1802,24 +1807,34 @@ public class TorConfig
         }
     }
 
-    public static TorConfig defaultConfig()
+    public enum LogOutput
     {
-        return new TorConfig()
-                .addAllowMissingTorrc()
-                .setLog(LogSeverity.Notice, "syslog")
-                .setRunAsDaemon(false)
-                .setSocksPort("127.0.0.1:9050")
-                .setControlPort("127.0.0.1:9051")
-                .setDnsPort("127.0.0.1:9053")
-                .setSafeLogging("0");
+        Syslog("syslog"),
+        Stdout("stdout"),
+        Stderr("stderr");
+
+        private final String val;
+
+        LogOutput(String val)
+        {
+            this.val = val;
+        }
+
+        public String getValue()
+        {
+            return val;
+        }
     }
 
-    private final List<String> commands = new ArrayList<>();
+    public TorConfig()
+    {
+        addCommand("exec");
+    }
 
     private void validate(String arg)
     {
         if (StringUtils.isEmpty(arg))
-            throw new IllegalStateException("Invalid config argument");
+            throw new IllegalArgumentException("Invalid config argument");
     }
 
     public TorConfig addAllowMissingTorrc()
@@ -1852,6 +1867,11 @@ public class TorConfig
         return this;
     }
 
+    public TorConfig setControlPort(InetSocketAddress socketAddress)
+    {
+        return setControlPort(addressString(socketAddress));
+    }
+
     /**
      * Set cookie authentication
      * <p>
@@ -1879,9 +1899,18 @@ public class TorConfig
     public TorConfig setCookieAuthFile(File file)
     {
         if (file == null || !file.exists())
-            throw new IllegalStateException("Invalid file.");
+            throw new IllegalArgumentException("Invalid file.");
 
         addCommand(COOKIE_AUTH_FILE, file.getAbsolutePath());
+        return this;
+    }
+    
+    public TorConfig setHashedControlPassword(PasswordDigest password)
+    {
+        if(password == null)
+            throw new IllegalArgumentException("Invalid password.");
+
+        addCommand(HASHED_CONTROL_PASSWORD, password.getHashedPassword());
         return this;
     }
 
@@ -1896,7 +1925,7 @@ public class TorConfig
     public TorConfig setDataDirectory(File directory)
     {
         if (directory == null || !directory.exists())
-            throw new IllegalStateException("Invalid data directory.");
+            throw new IllegalArgumentException("Invalid data directory.");
 
         addCommand(DATA_DIRECTORY, directory.getAbsolutePath());
         return this;
@@ -1991,9 +2020,9 @@ public class TorConfig
      * @param severity - {@link LogSeverity}
      * @param output   - stderr|stdout|syslog (Android seems to support syslog only.)
      */
-    public TorConfig setLog(LogSeverity severity, String output)
+    public TorConfig setLog(LogSeverity severity, LogOutput output)
     {
-        addCommand(LOG, String.format("%s %s", severity.getValue(), output));
+        addCommand(LOG, String.format("%s %s", severity.getValue(), output.getValue()));
         return this;
     }
 
@@ -2175,6 +2204,11 @@ public class TorConfig
         return this;
     }
 
+    public TorConfig setSocksPort(InetSocketAddress socketAddress)
+    {
+        return setSocksPort(addressString(socketAddress));
+    }
+
     /**
      * Set DNS port
      *
@@ -2196,6 +2230,11 @@ public class TorConfig
         return this;
     }
 
+    public TorConfig setDnsPort(InetSocketAddress socketAddress)
+    {
+        return setDnsPort(addressString(socketAddress));
+    }
+
     /**
      * Tells Tor whether to run as an exit relay. If Tor is running as a non-bridge server, and ExitRelay is set to 1,
      * then Tor allows traffic to exit according to the ExitPolicy option (or the default ExitPolicy if none is specified).
@@ -2215,23 +2254,19 @@ public class TorConfig
         return this;
     }
 
-    public TorConfig addCommand(String... command)
+    /**
+     * If true, then the first time Tor starts up with a fresh DataDirectory, it starts in dormant mode,
+     * and takes no actions until the user has made a request. (This mode is recommended if installing a
+     * Tor client for a user who might not actually use it.) If false, Tor bootstraps the first time it is started,
+     * whether it sees a user request or not.
+     * After the first time Tor starts, it begins in dormant mode if it was dormant before, and not otherwise.
+     *
+     * (Default: 0)
+     * @param enabled
+     */
+    public TorConfig setDormantOnFirstStartup(boolean enabled)
     {
-        commands.addAll(Arrays.asList(command));
+        addCommand(DORMANT_ON_FIRST_STARTUP, convertBoolean(enabled));
         return this;
-    }
-
-    private String convertBoolean(boolean val)
-    {
-        return val ? "1" : "0";
-    }
-
-    public String[] asCommands()
-    {
-        List<String> temp = new ArrayList<>();
-        temp.add("tor");
-        temp.addAll(commands);
-
-        return temp.toArray(new String[0]);
     }
 }

@@ -15,10 +15,8 @@ public:
             {"a1", "()Ljava/lang/String;",                         (void *) (TorClient::torVersion)},
             {"a2", "()Z",                                          (void *) (TorClient::createTorConfig)},
             {"a3", "()V",                                          (void *) (TorClient::destroyTorConfig)},
-            {"a4", "()I",                                          (void *) (TorClient::setupTorControlSocket)},
             {"a5", "([Ljava/lang/String;)Z",                       (void *) (TorClient::setTorCommandLine)},
-            {"a6", "(Ljava/lang/String;)Ljava/io/FileDescriptor;", (void *) (TorClient::prepareFileDescriptor)},
-            {"a7", "()V",                                          (void *) (TorClient::startTor)},
+            {"a6", "()V",                                          (void *) (TorClient::startTor)},
     }) {
         this->instance = this;
     }
@@ -34,13 +32,9 @@ private:
 
     static void destroyTorConfig(JNIEnv *env, jobject thiz);
 
-    static int setupTorControlSocket(JNIEnv *env, jobject thiz);
-
     static bool setTorCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv);
 
     static void startTor(JNIEnv *env, jobject thiz);
-
-    static jobject prepareFileDescriptor(JNIEnv *env, jclass thiz, jstring arg);
 
     tor_main_configuration_t *getTorConfig() const {
         return torConfig;
