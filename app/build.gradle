@@ -27,5 +27,5 @@ android {
 }
 
 dependencies {
-    implementation project(':torLib')
+    implementation project(':torVpnLib')
 }

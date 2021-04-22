@@ -18,7 +18,6 @@ import com.alloc64.vpn.VPNMessageTypes;
 import com.alloc64.vpn.messenger.ConnectionStateMessage;
 import com.alloc64.vpn.messenger.IBasicMessage;
 
-import androidx.annotation.Nullable;
 
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
@@ -264,12 +263,12 @@ public class AbstractVPNClient
 
 	// region Callbacks
 
-	private void onMessageReceived(Message m, @Nullable IBasicMessage message)
+	private void onMessageReceived(Message m, IBasicMessage message)
 	{
 		onMessageReceived(m.what, message);
 	}
 
-	protected void onMessageReceived(int messageType, @Nullable IBasicMessage message)
+	protected void onMessageReceived(int messageType, IBasicMessage message)
 	{
 		switch (messageType)
 		{

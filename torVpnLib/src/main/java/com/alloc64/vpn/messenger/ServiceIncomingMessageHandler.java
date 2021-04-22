@@ -6,8 +6,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
 public abstract class ServiceIncomingMessageHandler extends Handler
 {
     private static final String TAG = ServiceIncomingMessageHandler.class.toString();
@@ -58,5 +56,5 @@ public abstract class ServiceIncomingMessageHandler extends Handler
         }
     }
 
-    protected abstract void processMessage(int messageType, Message m, @Nullable IBasicMessage basicMessage);
+    protected abstract void processMessage(int messageType, Message m, IBasicMessage basicMessage);
 }

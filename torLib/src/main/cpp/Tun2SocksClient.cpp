@@ -36,5 +36,5 @@ void Tun2SocksClient::setArguments(jint vpnInterfaceFileDescriptor,
     this->vpnNetMask = env->GetStringUTFChars(vpnNetMask, nullptr);
     this->socksServerAddress = env->GetStringUTFChars(socksServerAddress, nullptr);
     this->udpgwServerAddress = env->GetStringUTFChars(udpgwServerAddress, nullptr);
-    this->udpgwTransparentDNS = udpgwTransparentDNS;
+    this->udpgwTransparentDNS = udpgwTransparentDNS; //TODO: fix string leak
 }

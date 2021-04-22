@@ -6,13 +6,8 @@ import com.alloc64.torlib.TorConfig;
 import com.alloc64.torlib.control.PasswordDigest;
 import com.alloc64.torlib.control.TorControlSocket;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.Locale;
 
 import okhttp3.OkHttpClient;
 
@@ -20,7 +15,7 @@ public class TLJNIBridge
 {
     public class Tor
     {
-        private TorControlSocket contorlPortSocket;
+        private TorControlSocket controlPortSocket;
 
         public String getTorVersion()
         {
@@ -57,10 +52,15 @@ public class TLJNIBridge
 
         public Tor attachControlPort(InetSocketAddress socketAddress, PasswordDigest password, TorControlSocket.TorEventHandler eventHandler)
         {
-            this.contorlPortSocket = new TorControlSocket(password, eventHandler);
-            contorlPortSocket.connect(socketAddress);
+            this.controlPortSocket = new TorControlSocket(password, eventHandler);
+            controlPortSocket.connect(socketAddress);
 
             return this;
+        }
+
+        public TorControlSocket getControlPortSocket()
+        {
+            return controlPortSocket;
         }
 
         public Tor startTor()

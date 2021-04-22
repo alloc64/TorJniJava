@@ -15,15 +15,13 @@ import com.alloc64.vpn.messenger.IBasicMessage;
 import com.alloc64.vpn.messenger.ProtoconfidConnectionStateMessage;
 import com.alloc64.vpn.messenger.ReplyHandler;
 import com.alloc64.vpn.messenger.ServiceIncomingMessageHandler;
-import com.alloc64.vpn.tun.TunConfig;
-
-import org.json.JSONObject;
-
-import androidx.annotation.Nullable;
+import com.alloc64.vpn.tor.TorVpnProvider;
 
 public class TLVpnService extends VpnService implements IVPNService
 {
     private static final String TAG = TLVpnService.class.getName();
+
+    private TorVpnProvider torVpnProvider = new TorVpnProvider();
 
     private ParcelFileDescriptor tunInterface;
 
@@ -49,7 +47,7 @@ public class TLVpnService extends VpnService implements IVPNService
         this.serviceIncomingMessageHandler = new ServiceIncomingMessageHandler(this)
         {
             @Override
-            protected void processMessage(int messageType, Message m, @Nullable IBasicMessage basicMessage)
+            protected void processMessage(int messageType, Message m, IBasicMessage basicMessage)
             {
                 switch (messageType)
                 {
@@ -116,6 +114,8 @@ public class TLVpnService extends VpnService implements IVPNService
 
     public void connect(ProtoconfidConnectionStateMessage csm)
     {
+        torVpnProvider.start(this, new VpnService.Builder());
+
         //TODO: process connection
         /*
         VPNSocketAddress connectionAddress = csm.getConnectionAddress();
@@ -191,33 +191,6 @@ public class TLVpnService extends VpnService implements IVPNService
          */
 
         setStateInternal(VPNConnectionState.Disconnected);
-    }
-
-    public ParcelFileDescriptor createInterface(TunConfig tunConfig)
-    {
-        Builder builder = new Builder();
-
-        //builder.setMtu(tunConfig.getMtu());
-        builder.addAddress(tunConfig.getTunnelIp(), tunConfig.getTunnelMask());
-        builder.addRoute(tunConfig.getRouteIp(), 0);
-        builder.addDnsServer(tunConfig.getDnsIp());
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            builder.setBlocking(true);
-
-        try
-        {
-            if (tunInterface != null)
-                tunInterface.close();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        tunInterface = builder.setSession(tunConfig.getServerAddress()).establish();
-
-        return tunInterface;
     }
 
     public void setStateInternal(VPNConnectionState state)
