@@ -1,5 +1,7 @@
 package com.alloc64.jni;
 
+import android.util.Log;
+
 import com.alloc64.http.ProxiedSocketFactory;
 import com.alloc64.torlib.PdnsdConfig;
 import com.alloc64.torlib.TorConfig;
@@ -120,11 +122,22 @@ public class TLJNIBridge
         }
     }
 
+    public interface LogProvider
+    {
+        void logNativeMessage(int priority, String tag, String message);
+    }
+
     private final JNITrampoline jniTrampoline = new JNITrampoline();
 
     private final Tor tor = new Tor();
     private final Pdnsd pdnsd = new Pdnsd();
     private final Tun2Socks tun2Socks = new Tun2Socks();
+    private LogProvider logProvider;
+
+    public TLJNIBridge()
+    {
+        setLogProvider(Log::println);
+    }
 
     public Tor getTor()
     {
@@ -139,6 +152,11 @@ public class TLJNIBridge
     public Tun2Socks getTun2Socks()
     {
         return tun2Socks;
+    }
+
+    public void setLogProvider(LogProvider logProvider)
+    {
+        this.logProvider = logProvider;
     }
 
     // region Tor native methods
@@ -175,6 +193,21 @@ public class TLJNIBridge
             int udpgwTransparentDNS);
 
     public native void a11();
+
+    // endregion
+
+    // region Logger methods
+
+    //TODO: keep name
+    public void a12(int priority, String tag, String message)
+    {
+        if(logProvider != null)
+            logProvider.logNativeMessage(priority, tag, message);
+
+        this.a13(this);
+    }
+
+    public native void a13(TLJNIBridge bridge);
 
     // endregion
 }

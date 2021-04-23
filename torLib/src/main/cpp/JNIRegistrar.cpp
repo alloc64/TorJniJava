@@ -25,7 +25,7 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
 }
 
 int JNIRegistrar::registerWithJNI(JNIEnv *env) {
-    Logger::setEnv(env);
+    new Logger(env);
 
     // Register JNIAware instances here
     new TorClient(env);

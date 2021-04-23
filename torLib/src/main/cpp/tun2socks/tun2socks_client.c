@@ -88,11 +88,6 @@
     BReactor_Synchronize(&ss, &sync_mark.base); \
     BPending_Free(&sync_mark);
 
-#ifdef ANDROID
-#include <android/log.h>
-#define fprintf(ignored, ...)  __android_log_print(ANDROID_LOG_ERROR, "T2C", ##__VA_ARGS__)
-#endif // ANDROID
-
 
 // command-line options
 struct {
@@ -156,6 +151,7 @@ struct tcp_client {
 #include <sys/un.h>
 #include <structure/BAVL.h>
 #include <jni.h>
+#include "../LoggerTypedef.h"
 
 BAVL connections_tree;
 typedef struct {
@@ -2107,5 +2103,5 @@ void udpgw_client_handler_received (void *unused, BAddr local_addr, BAddr remote
 
 void PsiphonLog(const char *levelStr, const char *channelStr, const char *msgStr)
 {
-    fprintf("%s: %s %s", levelStr, channelStr, msgStr);
+    JNILog(LOG_VERBOSE, "T2", msgStr);
 }

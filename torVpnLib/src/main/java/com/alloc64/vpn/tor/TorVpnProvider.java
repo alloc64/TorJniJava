@@ -85,6 +85,7 @@ public class TorVpnProvider
             builder.addAddress(clientIp, 32);
             builder.addRoute("0.0.0.0", 0);
             builder.addDnsServer("1.1.1.1"); // this is intercepted by the tun2socks library, but we must put in a valid DNS to start
+            builder.addDisallowedApplication(ctx.getPackageName());
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                 builder.setBlocking(true);

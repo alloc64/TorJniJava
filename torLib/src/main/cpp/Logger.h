@@ -2,29 +2,42 @@
 #define LOGGER_H
 
 #include <jni.h>
+#include "JNIAware.h"
+#include "LoggerTypedef.h"
 
-class Logger {
+class Logger : public JNIAware {
 
 public:
-
-    static void d(const char* tag, const char* msg, ...);
-
-    static void e(const char* tag, const char* msg, ...);
-
-    static void i(const char* tag, const char* msg, ...);
-
-    static void wtf(const char* tag, const char* msg, ...);
-
-    static void v(const char* tag, const char* msg, ...);
-
-    static void w(const char* tag, const char* msg, ...);
-
-    static void setEnv(JNIEnv *e) {
-        Logger::env = e;
+    Logger(JNIEnv *env) : JNIAware(env, "com/alloc64/jni/TLJNIBridge", std::vector<JNINativeMethod>{
+            {"a13", "(Ljava/lang/Object)V", (void *) (Logger::setJNIBridgeInstance)},
+    }) {
+        this->instance = this;
     }
 
+    static void d(const char *tag, const char *msg, ...);
+
+    static void e(const char *tag, const char *msg, ...);
+
+    static void i(const char *tag, const char *msg, ...);
+
+    static void wtf(const char *tag, const char *msg, ...);
+
+    static void v(const char *tag, const char *msg, ...);
+
+    static void w(const char *tag, const char *msg, ...);
+
+    static void log(LogPriority priority, const char *tag, const char *msg, va_list params);
+
 private:
-    static JNIEnv *env;
+    static Logger *instance;
+
+    static Logger *getInstance() {
+        return instance;
+    }
+
+    static void setJNIBridgeInstance(JNIEnv *env, jobject instance);
+
+    jobject jniBridgeInstance = nullptr;
 };
 
 #endif //LOGGER_H

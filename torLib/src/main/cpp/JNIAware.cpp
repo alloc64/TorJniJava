@@ -1,5 +1,7 @@
 #include <jni.h>
 
+#include <utility>
+
 #include "Logger.h"
 #include "JNIAware.h"
 
@@ -7,8 +9,9 @@
 
 JNIAware::JNIAware(JNIEnv *env, const char* className, std::vector<JNINativeMethod> methods) {
     this->env = env;
+    this->className = className;
 
-    registerNativeMethods(className, methods);
+    registerNativeMethods(className, std::move(methods));
 }
 
 int JNIAware::registerNativeMethods(const char* className, std::vector<JNINativeMethod> methods) {
@@ -28,4 +31,8 @@ int JNIAware::registerNativeMethods(const char* className, std::vector<JNINative
 
 JNIEnv *JNIAware::getJNIEnv() const {
     return env;
+}
+
+const char *JNIAware::getClassName() const {
+    return className;
 }

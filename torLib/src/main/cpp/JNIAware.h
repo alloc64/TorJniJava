@@ -17,9 +17,12 @@ private:
 
 public:
     JNIEnv *getJNIEnv() const;
+    const char* getClassName() const;
 
 private:
     int registerNativeMethods(const char* className, std::vector<JNINativeMethod> methods);
+
+    const char *className;
 };
 
 
