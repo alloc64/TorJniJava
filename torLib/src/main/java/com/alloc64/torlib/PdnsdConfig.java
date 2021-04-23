@@ -26,9 +26,9 @@ public class PdnsdConfig extends ArgConfig
     {
         String PDNS_CONF = "global {\n" +
                 "\tperm_cache=0;\n" +
-                "\tcache_dir=\"%3$s\";\n" +
-                "\tserver_port = %5$d;\n" +
-                "\tserver_ip = %4$s;\n" +
+                "\tcache_dir=\"%s\";\n" +
+                "\tserver_ip = %s;\n" +
+                "\tserver_port = %d;\n" +
                 "\tquery_method=udp_only;\n" +
                 "\tmin_ttl=1m;\n" +
                 "\tmax_ttl=1w;\n" +
@@ -39,8 +39,8 @@ public class PdnsdConfig extends ArgConfig
                 "\n" +
                 "server {\n" +
                 "\tlabel= \"upstream\";\n" +
-                "\tip = %1$s;\n" +
-                "\tport = %2$d;\n" +
+                "\tip = %s;\n" +
+                "\tport = %d;\n" +
                 "\tuptest = none;\n" +
                 "}\n" +
                 "\n" +
@@ -62,13 +62,12 @@ public class PdnsdConfig extends ArgConfig
         if (!cache.exists())
             cache.createNewFile();
 
-        String conf = String.format(Locale.US,
-                PDNS_CONF,
-                torDnsHost,
-                torDnsPort,
+        String conf = String.format(Locale.US, PDNS_CONF,
                 cache.getCanonicalPath(),
                 pdnsdHost,
-                pdnsdPort
+                pdnsdPort,
+                torDnsHost,
+                torDnsPort
         );
 
         FileOutputStream fos = new FileOutputStream(fPid, false);
