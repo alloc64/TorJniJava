@@ -1,6 +1,5 @@
 package com.alloc64.torlib;
 
-import androidx.appcompat.app.AppCompatActivity;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -81,7 +80,7 @@ public class BasicTorSampleActivity extends Activity
                     .build();
 
             bridge.getPdnsd()
-                    .startDnsd(new PdnsdConfig()
+                    .startPdnsd(new PdnsdConfig()
                             .setBaseDir(dataDirectory)
                             .setUpstreamDnsAddress(dnsPort)
                             .setDnsServerAddress(new InetSocketAddress("127.0.0.1", 15053))

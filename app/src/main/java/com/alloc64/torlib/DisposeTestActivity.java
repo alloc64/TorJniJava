@@ -15,7 +15,14 @@ import java.net.InetSocketAddress;
 
 public class DisposeTestActivity extends Activity
 {
+    private final InetSocketAddress socksPort = InetSocketAddress.createUnresolved("127.0.0.1", 9050);
+    private final InetSocketAddress controlPort = InetSocketAddress.createUnresolved("127.0.0.1", 9051);
+    private final InetSocketAddress dnsPort = InetSocketAddress.createUnresolved("127.0.0.1", 9053);
+
+    private File dataDirectory;
+
     private TextView torStatus;
+    private TextView pdnsdStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -24,54 +31,30 @@ public class DisposeTestActivity extends Activity
 
         setContentView(R.layout.activity_dispose_test);
 
+        File filesDir = getFilesDir();
+        this.dataDirectory = new File(filesDir, "/transport");
+        dataDirectory.mkdir();
+
         Handler mainThreadHandler = new Handler();
 
         TLJNIBridge.get().setMainThreadDispatcher(mainThreadHandler::post);
 
         this.torStatus = findViewById(R.id.tor_status);
+        findViewById(R.id.start_tor).setOnClickListener(v -> startTor());
+        findViewById(R.id.stop_tor).setOnClickListener(v -> stopTor());
 
-        findViewById(R.id.start_tor).setOnClickListener(v ->
-        {
-            startTor();
-        });
-
-        findViewById(R.id.stop_tor).setOnClickListener(v ->
-        {
-            stopTor();
-        });
-
-        try
-        {
-            /*
-            bridge.getPdnsd()
-                    .startDnsd(new PdnsdConfig()
-                            .setBaseDir(dataDirectory)
-                            .setUpstreamDnsAddress(dnsPort)
-                            .setDnsServerAddress(new InetSocketAddress("127.0.0.1", 15053))
-                    );
-
-             */
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        this.pdnsdStatus = findViewById(R.id.pdnsd_status);
+        findViewById(R.id.start_pdnsd).setOnClickListener(v -> startPdnsd());
+        findViewById(R.id.stop_pdnsd).setOnClickListener(v -> stopPdnsd());
     }
 
     private void startTor()
     {
-        File filesDir = getFilesDir();
-        File dataDirectory = new File(filesDir, "/transport");
-        dataDirectory.mkdir();
-
-        InetSocketAddress socksPort = InetSocketAddress.createUnresolved("127.0.0.1", 9050);
-        InetSocketAddress controlPort = InetSocketAddress.createUnresolved("127.0.0.1", 9051);
-        InetSocketAddress dnsPort = InetSocketAddress.createUnresolved("127.0.0.1", 9053);
-
         if (!TLJNIBridge.get().getTor().isTorRunning())
             torStatus.setText("Tor is starting");
 
-        TLJNIBridge.get()
+        TLJNIBridge
+                .get()
                 .getTor()
                 .createTorConfig()
                 .setTorCommandLine(new TorConfig()
@@ -104,8 +87,10 @@ public class DisposeTestActivity extends Activity
     {
         try
         {
-            TLJNIBridge.get()
-                    .getTor().destroyTor();
+            TLJNIBridge
+                    .get()
+                    .getTor()
+                    .destroyTor();
         }
         catch (IOException e)
         {
@@ -113,5 +98,33 @@ public class DisposeTestActivity extends Activity
         }
 
         torStatus.setText("Tor is destroyed");
+    }
+
+    private void startPdnsd()
+    {
+        if (!TLJNIBridge.get().getPdnsd().isPdnsdRunning())
+            pdnsdStatus.setText("PDNSd is starting");
+
+        TLJNIBridge
+                .get()
+                .getPdnsd()
+                .startPdnsd(new PdnsdConfig()
+                        .setBaseDir(dataDirectory)
+                        .setUpstreamDnsAddress(dnsPort)
+                        .setDnsServerAddress(new InetSocketAddress("127.0.0.1", 15053))
+                );
+
+        if (TLJNIBridge.get().getPdnsd().isPdnsdRunning())
+            pdnsdStatus.setText("PDNSd should be running now");
+    }
+
+    private void stopPdnsd()
+    {
+        TLJNIBridge
+                .get()
+                .getPdnsd()
+                .destroyPdnsd();
+
+        pdnsdStatus.setText("PDNSd is destroyed");
     }
 }

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:gravity="center">
 
     <TextView
         android:id="@+id/tor_status"
@@ -19,4 +21,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Stop TOR" />
+
+
+    <TextView
+        android:id="@+id/pdnsd_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PDNSD not running"/>
+    <Button
+        android:id="@+id/start_pdnsd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start PDNSD" />
+
+    <Button
+        android:id="@+id/stop_pdnsd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop PDNSD" />
 </LinearLayout>

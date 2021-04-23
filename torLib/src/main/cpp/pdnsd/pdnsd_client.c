@@ -17,6 +17,9 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+
+#define _exit(ignored) fprintf(stderr, "An exit was called, however we ignore exits.");
+
 #include "src/consts.h"
 #include "src/cache.h"
 #include "src/status.h"
@@ -607,13 +610,43 @@ int runPdnsd(int argc, char *argv[]) {
             log_warn("Could not close debug file: %s", strerror(errno));
         }
 #endif
-    _exit(0);
+
+    return 0;
 }
 
 void terminatePdnsd() {
-    pthread_kill(main_thrid,SIGTERM);
-    pthread_kill(udps_thrid,SIGTERM);
+    if(main_thrid > 0) {
+        pthread_kill(main_thrid, SIGTERM);
+        main_thrid = 0;
+    }
+
+    if (!pthread_equal(main_thrid, udps_thrid)) {
+        pthread_kill(udps_thrid, SIGTERM);
+        udps_thrid = 0;
+    }
+
 #ifndef NO_TCP_SERVER
-    pthread_kill(tcps_thrid,SIGTERM);
+    if (!pthread_equal(main_thrid, tcps_thrid)) {
+        pthread_kill(tcps_thrid, SIGTERM);
+        tcps_thrid = 0;
+    }
 #endif
+
+    debug_p = 0;
+    stat_pipe = 0;
+
+    if (!pthread_equal(main_thrid, servstat_thrid)) {
+        pthread_kill(servstat_thrid, SIGTERM);
+        servstat_thrid = 0;
+    }
+
+    if (!pthread_equal(main_thrid, statsock_thrid)) {
+        pthread_kill(statsock_thrid, SIGTERM);
+        statsock_thrid = 0;
+    }
+
+    init_uid = 0;
+
+    tcp_socket = -1;
+    udp_socket = -1;
 }

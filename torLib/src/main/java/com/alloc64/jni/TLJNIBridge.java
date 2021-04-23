@@ -51,7 +51,7 @@ public class TLJNIBridge
 
         public Tor attachControlPort(InetSocketAddress socketAddress, PasswordDigest password, TorControlSocket.TorEventHandler eventHandler)
         {
-            if(controlPortSocket == null)
+            if (controlPortSocket == null)
             {
                 this.controlPortSocket = new TorControlSocket(password, eventHandler);
                 controlPortSocket.connect(socketAddress);
@@ -67,7 +67,7 @@ public class TLJNIBridge
 
         public void detachControlPort() throws IOException
         {
-            if(controlPortSocket == null)
+            if (controlPortSocket == null)
                 return;
 
             try
@@ -82,7 +82,7 @@ public class TLJNIBridge
 
         /**
          * Start TOR in subthread.
-         *
+         * <p>
          * Library internaly checks for duplicate starts, so TOR can be started only once.
          *
          * @return
@@ -91,7 +91,7 @@ public class TLJNIBridge
         {
             if (isTorRunning())
             {
-                Log.i(TAG, "Ignoring restart. T is already running.");
+                Log.i(TAG, "Ignoring start. T is already running.");
             }
             else
             {
@@ -103,13 +103,13 @@ public class TLJNIBridge
 
         /**
          * Destroy TOR in subthread.
-         *
+         * <p>
          * As tor was primarily made as standalone application, use as shared library is a bit quirky.
          * Probably that's why, TOR is mostly run as standalone process, so when crash occurs, nothing bad happens.
-         *
+         * <p>
          * Sometimes you may experience crashes, which will crash whole application.
          * You know, this happens, mostly in case you destroy TOR in bootstrap phase.
-         *
+         * <p>
          * These crashes are out of control of this library and can be avoided by having TOR in dormant/active mode.
          *
          * @return
@@ -142,16 +142,24 @@ public class TLJNIBridge
     {
         public Pdnsd startDnsd(String[] args)
         {
-            jniTrampoline.call(() -> a8(args));
+            if (isPdnsdRunning())
+            {
+                Log.i(TAG, "Ignoring start. PD is already running.");
+            }
+            else
+            {
+                jniTrampoline.call(() -> a8(args));
+            }
+
             return this;
         }
 
-        public Pdnsd startDnsd(PdnsdConfig config)
+        public Pdnsd startPdnsd(PdnsdConfig config)
         {
             return startDnsd(config.asCommands());
         }
 
-        public void destroyDnsd()
+        public void destroyPdnsd()
         {
             jniTrampoline.call(TLJNIBridge.this::a9);
         }
@@ -172,7 +180,14 @@ public class TLJNIBridge
                 String socksServerAddress,
                 String udpgwServerAddress)
         {
-            jniTrampoline.call(() -> TLJNIBridge.this.a10(vpnInterfaceFileDescriptor, vpnInterfaceMTU, vpnIpAddress, vpnNetMask, socksServerAddress, udpgwServerAddress));
+            if (isInterfaceRunning())
+            {
+                Log.i(TAG, "Ignoring start. T2 is already running.");
+            }
+            else
+            {
+                jniTrampoline.call(() -> TLJNIBridge.this.a10(vpnInterfaceFileDescriptor, vpnInterfaceMTU, vpnIpAddress, vpnNetMask, socksServerAddress, udpgwServerAddress));
+            }
         }
 
         public void destroyInterface()

@@ -72,7 +72,7 @@ public class TorVpnProvider
             TLJNIBridge
                     .get()
                     .getPdnsd()
-                    .startDnsd(new PdnsdConfig()
+                    .startPdnsd(new PdnsdConfig()
                             .setBaseDir(dataDirectory)
                             .setUpstreamDnsAddress(dnsPort)
                             .setDnsServerAddress(cachingDnsPort)
