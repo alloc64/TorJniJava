@@ -609,3 +609,11 @@ int runPdnsd(int argc, char *argv[]) {
 #endif
     _exit(0);
 }
+
+void terminatePdnsd() {
+    pthread_kill(main_thrid,SIGTERM);
+    pthread_kill(udps_thrid,SIGTERM);
+#ifndef NO_TCP_SERVER
+    pthread_kill(tcps_thrid,SIGTERM);
+#endif
+}

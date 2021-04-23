@@ -1,36 +1,36 @@
-package com.alloc64.torlib.samples;
+package com.alloc64.torlib;
+
+import androidx.appcompat.app.AppCompatActivity;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.TextView;
 
 import com.alloc64.jni.TLJNIBridge;
-import com.alloc64.torlib.PdnsdConfig;
-import com.alloc64.torlib.R;
-import com.alloc64.torlib.TorConfig;
 import com.alloc64.torlib.control.PasswordDigest;
 import com.alloc64.torlib.control.TorControlSocket;
 
 import java.io.File;
 import java.net.InetSocketAddress;
 
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
-public class BasicTorSample
+public class BasicTorSampleActivity extends Activity
 {
     private OkHttpClient httpClient;
 
-    protected void create(Activity ctx)
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
     {
+        super.onCreate(savedInstanceState);
+
         TLJNIBridge bridge = TLJNIBridge.get();
 
         try
         {
-            File filesDir = ctx.getFilesDir();
+            File filesDir = getFilesDir();
             File dataDirectory = new File(filesDir, "/transport");
             dataDirectory.mkdir();
 

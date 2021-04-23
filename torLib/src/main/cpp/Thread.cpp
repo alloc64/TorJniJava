@@ -12,6 +12,16 @@ void Thread::start() {
     this->thread = new std::thread(&Thread::run, this);
 }
 
+void Thread::run() {
+    if(this->isRunning())
+        this->cleanup();
+}
+
 void Thread::terminate() {
+    if(this->isRunning())
+        this->cleanup();
+}
+
+void Thread::cleanup() {
     this->thread = nullptr;
 }

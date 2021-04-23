@@ -126,4 +126,8 @@ extern "C" int tor_run_main(const tor_main_configuration_t *);
  */
 extern "C" int tor_main(int argc, char **argv);
 
+extern "C" void tor_cleanup(void);
+
+extern "C" void hibernate_begin_shutdown(void);
+
 #endif /* !defined(TOR_API_H) */

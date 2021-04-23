@@ -5,15 +5,22 @@
 #include "Thread.h"
 #include <vector>
 
+#define TAG "PD"
+
 class PdnsdClient : public JNIAware, Thread {
 public:
     PdnsdClient(JavaVM *vm, JNIEnv *env) : JNIAware(vm, "com/alloc64/jni/TLJNIBridge",
                                                     std::vector<JNINativeMethod>{
                                                             {"a8", "([Ljava/lang/String;)V", (void *) (PdnsdClient::startDnsd)},
-                                                            {"a9", "()V",                    (void *) (PdnsdClient::destroyDnsd)},
+                                                            {"a9", "()V",                    (void *) (PdnsdClient::destroyPdnsd)},
+                                                            {"a7", "()Z",                    (void *) (PdnsdClient::isPdnsdRunning)}
                                                     }, env) {
         this->instance = this;
     }
+
+    void terminate() override;
+
+    void cleanup() override;
 
 protected:
     void run() override;
@@ -25,7 +32,9 @@ private:
 
     static void startDnsd(JNIEnv *env, jobject thiz, jobjectArray argv);
 
-    static void destroyDnsd(JNIEnv *env, jobject thiz);
+    static void destroyPdnsd(JNIEnv *env, jobject thiz);
+
+    static bool isPdnsdRunning(JNIEnv *env, jobject thiz);
 
     static PdnsdClient *instance;
 

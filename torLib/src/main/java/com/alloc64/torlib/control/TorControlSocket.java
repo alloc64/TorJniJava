@@ -1,5 +1,7 @@
 package com.alloc64.torlib.control;
 
+import com.alloc64.jni.TLJNIBridge;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
@@ -258,7 +260,7 @@ public class TorControlSocket implements Runnable
 
     public void close() throws IOException
     {
-        if(socket != null)
+        if (socket != null)
             socket.close();
     }
 
@@ -307,7 +309,10 @@ public class TorControlSocket implements Runnable
 
                 Reply reply = read();
 
-                callback.onResult(this, reply);
+                TLJNIBridge
+                        .get()
+                        .getMainThreadDispatcher()
+                        .dispatch(() -> callback.onResult(TorControlSocket.this, reply));
             }
             catch (Exception e)
             {

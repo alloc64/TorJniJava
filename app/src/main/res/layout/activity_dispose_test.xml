@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tor_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tor not running"/>
+    <Button
+        android:id="@+id/start_tor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start TOR" />
+
+    <Button
+        android:id="@+id/stop_tor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop TOR" />
+</LinearLayout>

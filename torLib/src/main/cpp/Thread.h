@@ -14,7 +14,8 @@ public:
     }
 
 protected:
-    virtual void run() = 0;
+    virtual void run();
+    virtual void cleanup();
 
 private:
     std::thread *thread = nullptr;

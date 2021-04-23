@@ -35,11 +35,12 @@ bool TorClient::createTorConfig(JNIEnv *env, jobject thiz) {
     return true;
 }
 
-void TorClient::destroyTorConfig(JNIEnv *env, jobject thiz) {
-    auto torConfig = getInstance()->getTorConfig();
+void TorClient::destroyTor(JNIEnv *env, jobject thiz) {
+    getInstance()->terminate();
+}
 
-    if(torConfig != nullptr)
-        tor_main_configuration_free(torConfig);
+bool TorClient::isTorRunning(JNIEnv *env, jobject thiz) {
+    return getInstance()->isRunning();
 }
 
 bool TorClient::setTorCommandLine(JNIEnv *env, jobject thiz, jobjectArray arrArgv) {
@@ -90,4 +91,32 @@ void TorClient::run() {
 
     if (rv != 0)
         Logger::e(TAG, "An error occured while starting daemon: %d", rv);
+
+    Thread::run();
+}
+
+void TorClient::cleanup() {
+    Thread::cleanup();
+
+    auto torConfig = getInstance()->getTorConfig();
+
+    if(torConfig != nullptr) {
+        tor_main_configuration_free(torConfig);
+
+        getInstance()->setTorConfig(nullptr);
+    }
+}
+
+void TorClient::terminate() {
+    if(!this->isRunning()) {
+        Logger::e(TAG, "Unable to terminate non-running T client.");
+        return;
+    }
+
+    // this symbol is called internally when SIGINT occurs
+    // double call is required to exit immediatelly (see console)
+    hibernate_begin_shutdown();
+    hibernate_begin_shutdown();
+
+    Thread::terminate();
 }

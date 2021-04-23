@@ -8,6 +8,7 @@ import com.alloc64.torlib.TorConfig;
 import com.alloc64.torlib.control.PasswordDigest;
 import com.alloc64.torlib.control.TorControlSocket;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 
@@ -15,6 +16,8 @@ import okhttp3.OkHttpClient;
 
 public class TLJNIBridge
 {
+    public static final String TAG = TLJNIBridge.class.getName();
+
     public class Tor
     {
         private TorControlSocket controlPortSocket;
@@ -29,12 +32,6 @@ public class TLJNIBridge
             if (!jniTrampoline.call(TLJNIBridge.this::a2))
                 throw new IllegalStateException("Unable to create transport config.");
 
-            return this;
-        }
-
-        public Tor destroyTorConfig()
-        {
-            jniTrampoline.call(TLJNIBridge.this::a3);
             return this;
         }
 
@@ -54,8 +51,11 @@ public class TLJNIBridge
 
         public Tor attachControlPort(InetSocketAddress socketAddress, PasswordDigest password, TorControlSocket.TorEventHandler eventHandler)
         {
-            this.controlPortSocket = new TorControlSocket(password, eventHandler);
-            controlPortSocket.connect(socketAddress);
+            if(controlPortSocket == null)
+            {
+                this.controlPortSocket = new TorControlSocket(password, eventHandler);
+                controlPortSocket.connect(socketAddress);
+            }
 
             return this;
         }
@@ -65,10 +65,65 @@ public class TLJNIBridge
             return controlPortSocket;
         }
 
+        public void detachControlPort() throws IOException
+        {
+            if(controlPortSocket == null)
+                return;
+
+            try
+            {
+                controlPortSocket.close();
+            }
+            finally
+            {
+                controlPortSocket = null;
+            }
+        }
+
+        /**
+         * Start TOR in subthread.
+         *
+         * Library internaly checks for duplicate starts, so TOR can be started only once.
+         *
+         * @return
+         */
         public Tor startTor()
         {
-            jniTrampoline.call(TLJNIBridge.this::a6);
+            if (isTorRunning())
+            {
+                Log.i(TAG, "Ignoring restart. T is already running.");
+            }
+            else
+            {
+                jniTrampoline.call(TLJNIBridge.this::a6);
+            }
+
             return this;
+        }
+
+        /**
+         * Destroy TOR in subthread.
+         *
+         * As tor was primarily made as standalone application, use as shared library is a bit quirky.
+         * Probably that's why, TOR is mostly run as standalone process, so when crash occurs, nothing bad happens.
+         *
+         * Sometimes you may experience crashes, which will crash whole application.
+         * You know, this happens, mostly in case you destroy TOR in bootstrap phase.
+         *
+         * These crashes are out of control of this library and can be avoided by having TOR in dormant/active mode.
+         *
+         * @return
+         */
+        public void destroyTor() throws IOException
+        {
+            jniTrampoline.call(TLJNIBridge.this::a3);
+
+            detachControlPort();
+        }
+
+        public boolean isTorRunning()
+        {
+            return jniTrampoline.call(TLJNIBridge.this::a4);
         }
 
         public OkHttpClient.Builder createOkHttpClient(InetSocketAddress socketAddress)
@@ -100,6 +155,11 @@ public class TLJNIBridge
         {
             jniTrampoline.call(TLJNIBridge.this::a9);
         }
+
+        public boolean isPdnsdRunning()
+        {
+            return jniTrampoline.call(TLJNIBridge.this::a7);
+        }
     }
 
     public class Tun2Socks
@@ -110,21 +170,30 @@ public class TLJNIBridge
                 String vpnIpAddress,
                 String vpnNetMask,
                 String socksServerAddress,
-                String udpgwServerAddress,
-                int udpgwTransparentDNS)
+                String udpgwServerAddress)
         {
-            jniTrampoline.call(() -> TLJNIBridge.this.a10(vpnInterfaceFileDescriptor, vpnInterfaceMTU, vpnIpAddress, vpnNetMask, socksServerAddress, udpgwServerAddress, udpgwTransparentDNS));
+            jniTrampoline.call(() -> TLJNIBridge.this.a10(vpnInterfaceFileDescriptor, vpnInterfaceMTU, vpnIpAddress, vpnNetMask, socksServerAddress, udpgwServerAddress));
         }
 
         public void destroyInterface()
         {
             jniTrampoline.call(TLJNIBridge.this::a11);
         }
+
+        public boolean isInterfaceRunning()
+        {
+            return jniTrampoline.call(TLJNIBridge.this::a14);
+        }
     }
 
     public interface LogProvider
     {
         void logNativeMessage(int priority, String tag, String message);
+    }
+
+    public interface MainThreadDispatcher
+    {
+        void dispatch(Runnable runnable);
     }
 
     private static final TLJNIBridge instance = new TLJNIBridge();
@@ -135,10 +204,14 @@ public class TLJNIBridge
     private final Pdnsd pdnsd = new Pdnsd();
     private final Tun2Socks tun2Socks = new Tun2Socks();
     private LogProvider logProvider;
+    private MainThreadDispatcher mainThreadDispatcher;
 
     private TLJNIBridge()
     {
+        System.loadLibrary("transport");
+
         setLogProvider(Log::println);
+        setMainThreadDispatcher(Runnable::run);
     }
 
     public static TLJNIBridge get()
@@ -167,6 +240,16 @@ public class TLJNIBridge
         this.a13(this);
     }
 
+    public MainThreadDispatcher getMainThreadDispatcher()
+    {
+        return mainThreadDispatcher;
+    }
+
+    public void setMainThreadDispatcher(MainThreadDispatcher mainThreadDispatcher)
+    {
+        this.mainThreadDispatcher = mainThreadDispatcher;
+    }
+
     // region Tor native methods
 
     public native String a1();
@@ -175,6 +258,8 @@ public class TLJNIBridge
 
     public native void a3();
 
+    public native boolean a4();
+
     public native boolean a5(String[] args);
 
     public native void a6();
@@ -182,6 +267,8 @@ public class TLJNIBridge
     // endregion
 
     // region Dnsd native methods
+
+    public native boolean a7();
 
     public native void a8(String[] args);
 
@@ -197,10 +284,11 @@ public class TLJNIBridge
             String vpnIpAddress,
             String vpnNetMask,
             String socksServerAddress,
-            String udpgwServerAddress,
-            int udpgwTransparentDNS);
+            String udpgwServerAddress);
 
     public native void a11();
+
+    public native boolean a14();
 
     // endregion
 
@@ -209,8 +297,8 @@ public class TLJNIBridge
     //TODO: keep name
     public void a12(int priority, String tag, String message)
     {
-        if(logProvider != null)
-            logProvider.logNativeMessage(priority, tag, message);
+        if (logProvider != null)
+            mainThreadDispatcher.dispatch(() -> logProvider.logNativeMessage(priority, tag, message));
     }
 
     public native void a13(TLJNIBridge bridge);

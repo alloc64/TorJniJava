@@ -103,8 +103,7 @@ public class TorVpnProvider
                             clientIp,
                             "255.255.255.0",
                             String.format("%s:%d", socksPort.getHostString(), socksPort.getPort()),
-                            String.format("%s:%d", clientIp, dnsPort.getPort()),
-                            1);
+                            String.format("%s:%d", clientIp, dnsPort.getPort()));
         }
         catch (Exception e)
         {

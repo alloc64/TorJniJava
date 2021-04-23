@@ -26,11 +26,6 @@ import okhttp3.Response;
 
 public class MainActivity extends Activity implements AbstractVPNClient.StateCallback
 {
-    static
-    {
-        System.loadLibrary("transport");
-    }
-
     private VPNClient vpnClient = new VPNClient();
 
     @Override
