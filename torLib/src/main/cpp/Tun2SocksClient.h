@@ -8,11 +8,12 @@
 
 class Tun2SocksClient : public JNIAware, public Thread {
 public:
-    Tun2SocksClient(JNIEnv *env) : JNIAware(env, "com/alloc64/jni/TLJNIBridge", std::vector<JNINativeMethod> {
-            {"a10", "(IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) (&Tun2SocksClient::createInterface)},
-            {"a11", "()V",                                                                            (void *) (&Tun2SocksClient::destroyInterface)},
+    Tun2SocksClient(JavaVM *vm, JNIEnv *env) : JNIAware(vm, "com/alloc64/jni/TLJNIBridge",
+                                                        std::vector<JNINativeMethod>{
+                                                                {"a10", "(IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) (&Tun2SocksClient::createInterface)},
+                                                                {"a11", "()V",                                                                            (void *) (&Tun2SocksClient::destroyInterface)},
 
-    }) {
+                                                        }, env) {
         this->instance = this;
     }
 

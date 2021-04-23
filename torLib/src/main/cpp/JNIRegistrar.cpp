@@ -18,19 +18,19 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     if (vm->GetEnv(&uenv.venv, JNI_VERSION_1_4) != JNI_OK)
         return -1;
 
-    if (JNIRegistrar::registerWithJNI(uenv.env) != JNI_TRUE)
+    if (JNIRegistrar::registerWithJNI(vm, uenv.env) != JNI_TRUE)
         return -2;
 
     return JNI_VERSION_1_4;
 }
 
-int JNIRegistrar::registerWithJNI(JNIEnv *env) {
-    new Logger(env);
+int JNIRegistrar::registerWithJNI(JavaVM *vm, JNIEnv *env) {
+    new Logger(vm, env);
 
     // Register JNIAware instances here
-    new TorClient(env);
-    new PdnsdClient(env);
-    new Tun2SocksClient(env);
+    new TorClient(vm, env);
+    new PdnsdClient(vm, env);
+    new Tun2SocksClient(vm, env);
 
     return JNI_TRUE;
 }

@@ -8,7 +8,7 @@
 
 class JNIRegistrar {
 public:
-    static int registerWithJNI(JNIEnv *env);
+    static int registerWithJNI(JavaVM *vm, JNIEnv *env);
 };
 
 

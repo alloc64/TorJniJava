@@ -1,16 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if ANDROID
-
-#include <android/log.h>
-
 #define TAG "pdnsd-logcat"
+#define exit(ignored) fprintf(stderr, "An exit was called, however we ignore exits.");
 
-#define fprintf(ignored, ...)  __android_log_print(ANDROID_LOG_ERROR, TAG, ##__VA_ARGS__)
-#define exit(ignored) fprintf(stderr, "An exit was called.");
-
-#endif
+#include "../JNILogger.h"
 
 #include <config.h>
 #include <sys/types.h>
@@ -37,18 +31,17 @@
 #include <pthread.h>
 #include <src/error.h>
 
-#if ANDROID
 #undef log_error
 #undef log_warn
 #undef log_info
 #undef debug_msg
 
-#define log_error(...) __android_log_print(ANDROID_LOG_ERROR, TAG, ##__VA_ARGS__)
-#define log_warn(...) __android_log_print(ANDROID_LOG_WARN, TAG, ##__VA_ARGS__)
-#define log_info(level, ...) { __android_log_print(ANDROID_LOG_INFO, TAG, ##__VA_ARGS__);}
-#define log_message(prior, ...) __android_log_print(ANDROID_LOG_WARN, TAG, s, ##__VA_ARGS__)
-#define debug_msg(ignored, ...) __android_log_print(ANDROID_LOG_DEBUG, TAG, ##__VA_ARGS__)
-#endif
+#define fprintf(ignored, ...) JNILog(LOG_VERBOSE, TAG, ##__VA_ARGS__)
+#define log_error(...) JNILog(LOG_ERROR, TAG, ##__VA_ARGS__)
+#define log_warn(...) JNILog(LOG_WARN, TAG, ##__VA_ARGS__)
+#define log_info(level, ...) { JNILog(LOG_INFO, TAG, ##__VA_ARGS__);}
+#define log_message(prior, ...) JNILog(LOG_WARN, TAG, s, ##__VA_ARGS__)
+#define debug_msg(ignored, ...) JNILog(LOG_DEBUG, TAG, ##__VA_ARGS__)
 
 #if DEBUG > 0
 short int debug_p = 0;

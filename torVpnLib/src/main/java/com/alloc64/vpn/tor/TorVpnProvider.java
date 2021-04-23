@@ -18,8 +18,6 @@ public class TorVpnProvider
 {
     private final static int VPN_MTU = 1500;
 
-    private final TLJNIBridge bridge = new TLJNIBridge();
-
     private InetSocketAddress socksPort = InetSocketAddress.createUnresolved("127.0.0.1", 9050);
     private InetSocketAddress controlPort = InetSocketAddress.createUnresolved("127.0.0.1", 9051);
     private InetSocketAddress dnsPort = InetSocketAddress.createUnresolved("127.0.0.1", 9053);
@@ -33,9 +31,10 @@ public class TorVpnProvider
             File dataDirectory = new File(filesDir, "/transport");
             dataDirectory.mkdir();
 
-            TLJNIBridge.Tor tor = bridge.getTor();
-
-            tor.createTorConfig()
+            TLJNIBridge
+                    .get()
+                    .getTor()
+                    .createTorConfig()
                     .setTorCommandLine(new TorConfig()
                             .addAllowMissingTorrc()
                             .setLog(TorConfig.LogSeverity.Notice, TorConfig.LogOutput.Syslog)
@@ -70,7 +69,9 @@ public class TorVpnProvider
                         }
                     });
 
-            bridge.getPdnsd()
+            TLJNIBridge
+                    .get()
+                    .getPdnsd()
                     .startDnsd(new PdnsdConfig()
                             .setBaseDir(dataDirectory)
                             .setUpstreamDnsAddress(dnsPort)
@@ -93,7 +94,9 @@ public class TorVpnProvider
             ParcelFileDescriptor tunInterface = builder.setSession("VPN")
                     .establish();
 
-            bridge.getTun2Socks()
+            TLJNIBridge
+                    .get()
+                    .getTun2Socks()
                     .createInterface(
                             tunInterface.detachFd(),
                             VPN_MTU,

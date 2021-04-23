@@ -10,12 +10,14 @@
 
 class JNIAware {
 public:
-    JNIAware(JNIEnv *env, const char* className, std::vector<JNINativeMethod> methods);
+    JNIAware(JavaVM *vm, const char *className, std::vector<JNINativeMethod> methods, JNIEnv *env);
 
 private:
+    JavaVM *vm;
     JNIEnv *env;
 
 public:
+    JavaVM *getVM() const;
     JNIEnv *getJNIEnv() const;
     const char* getClassName() const;
 

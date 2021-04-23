@@ -112,8 +112,7 @@ add_library(badvpn STATIC
         ${BADVPN_FOLDER}/flowextra/PacketPassInactivityMonitor.c
         ${BADVPN_FOLDER}/tun2socks/SocksUdpGwClient.c
         ${BADVPN_FOLDER}/udpgw_client/UdpGwClient.c
-        tun2socks/tun2socks_client.c
-        LoggerTypedef.c)
+        tun2socks/tun2socks_client.c)
 
 set_property(TARGET badvpn PROPERTY C_STANDARD 99)
 target_compile_definitions(badvpn PRIVATE "-DBADVPN_THREADWORK_USE_PTHREAD -DBADVPN_LINUX -DBADVPN_BREACTOR_BADVPN -D_GNU_SOURCE -DBADVPN_USE_SELFPIPE -DBADVPN_USE_EPOLL -DBADVPN_LITTLE_ENDIAN -DBADVPN_THREAD_SAFE -DNDEBUG -DANDROID -DTUN2SOCKS_JNI -DPSIPHON")
@@ -139,8 +138,8 @@ find_library(dllib dl)
 # transport
 #
 add_library(transport SHARED
-        JNIRegistrar.cpp
         JNIAware.cpp
+        JNIRegistrar.cpp
         Logger.cpp
         TorClient.cpp
         PdnsdClient.cpp

@@ -32,7 +32,6 @@
 #include <string.h>
 #include <limits.h>
 
-
 #include <misc/version.h>
 #include <misc/loggers_string.h>
 #include <misc/loglevel.h>
@@ -151,7 +150,7 @@ struct tcp_client {
 #include <sys/un.h>
 #include <structure/BAVL.h>
 #include <jni.h>
-#include "../LoggerTypedef.h"
+#include "../JNILogger.h"
 
 BAVL connections_tree;
 typedef struct {

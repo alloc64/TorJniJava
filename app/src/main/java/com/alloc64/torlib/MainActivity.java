@@ -39,7 +39,7 @@ public class MainActivity extends Activity implements AbstractVPNClient.StateCal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        TLJNIBridge bridge = new TLJNIBridge();
+        TLJNIBridge bridge = TLJNIBridge.get();
 
         TextView tv = findViewById(R.id.sample_text);
         tv.setText(bridge.getTor().getTorVersion());

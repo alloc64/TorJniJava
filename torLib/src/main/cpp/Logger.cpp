@@ -52,11 +52,6 @@ void Logger::w(const char *tag, const char *msg, ...) {
 }
 
 void Logger::log(LogPriority priority, const char *tag, const char *msg, va_list args) {
-    auto thiz = getInstance();
-
-    if(thiz == nullptr)
-        return;
-
     auto temp = std::vector<char>{};
     auto length = std::size_t{63};
 
@@ -70,27 +65,56 @@ void Logger::log(LogPriority priority, const char *tag, const char *msg, va_list
     }
 
     const char *string = temp.data();
-    auto jniBridgeInstance = thiz->jniBridgeInstance;
 
-    if (jniBridgeInstance != nullptr) {
-        auto env = thiz->getJNIEnv();
+    auto thiz = getInstance();
 
-        jclass clazz = env->GetObjectClass(jniBridgeInstance);
-        auto logMethod = env->GetMethodID(clazz, "a12", "(ILjava/lang/String;Ljava/lang/String;)V");
+    if (thiz != nullptr) {
+        auto jniBridgeInstance = thiz->jniBridgeInstance;
 
-        if (logMethod != nullptr) {
-            env->CallVoidMethod(jniBridgeInstance, logMethod, priority, tag, string);
+        if (jniBridgeInstance != nullptr) {
+            auto vm = thiz->getVM();
+
+            if (vm != nullptr) {
+                JNIEnv *env;
+                vm->AttachCurrentThread(&env, nullptr);
+
+                jclass clazz = env->GetObjectClass(jniBridgeInstance);
+                auto logMethod = env->GetMethodID(clazz, "a12", "(ILjava/lang/String;Ljava/lang/String;)V");
+
+                if (logMethod != nullptr) {
+                    jstring jtag = env->NewStringUTF((const char *) tag);
+                    jstring jstring = env->NewStringUTF((const char *) string);
+
+                    env->CallVoidMethod(jniBridgeInstance, logMethod, priority, jtag, jstring);
+                } else {
+#if ANDROID
+                    __android_log_print(priority, tag, "%s", string);
+#endif
+                }
+
+                vm->DetachCurrentThread();
+            } else {
+#if ANDROID
+                __android_log_print(priority, tag, "%s", string);
+#endif
+            }
         }
+    } else {
+#if ANDROID
+        __android_log_print(priority, tag, "%s", string);
+#endif
     }
 }
 
 void Logger::setJNIBridgeInstance(JNIEnv *env, jobject instance) {
-    getInstance()->jniBridgeInstance = instance;
+    getInstance()->jniBridgeInstance = env->NewGlobalRef(instance);
 }
 
-void JNILog(LogPriority priority, const char *tag, const char *msg, ...) {
+void JNILogOverride(LogPriority priority, const char *tag, const char *msg, ...) {
     va_list ap;
     va_start(ap, msg);
     Logger::log(priority, tag, msg, ap);
     va_end(ap);
 }
+
+JNILogPtr JNILog = JNILogOverride;

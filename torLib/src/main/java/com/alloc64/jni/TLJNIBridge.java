@@ -127,6 +127,8 @@ public class TLJNIBridge
         void logNativeMessage(int priority, String tag, String message);
     }
 
+    private static final TLJNIBridge instance = new TLJNIBridge();
+
     private final JNITrampoline jniTrampoline = new JNITrampoline();
 
     private final Tor tor = new Tor();
@@ -134,9 +136,14 @@ public class TLJNIBridge
     private final Tun2Socks tun2Socks = new Tun2Socks();
     private LogProvider logProvider;
 
-    public TLJNIBridge()
+    private TLJNIBridge()
     {
         setLogProvider(Log::println);
+    }
+
+    public static TLJNIBridge get()
+    {
+        return instance;
     }
 
     public Tor getTor()
@@ -157,6 +164,7 @@ public class TLJNIBridge
     public void setLogProvider(LogProvider logProvider)
     {
         this.logProvider = logProvider;
+        this.a13(this);
     }
 
     // region Tor native methods
@@ -203,8 +211,6 @@ public class TLJNIBridge
     {
         if(logProvider != null)
             logProvider.logNativeMessage(priority, tag, message);
-
-        this.a13(this);
     }
 
     public native void a13(TLJNIBridge bridge);

@@ -3,17 +3,25 @@
 
 #include <jni.h>
 #include "JNIAware.h"
-#include "LoggerTypedef.h"
+#include "JNILogger.h"
 
 class Logger : public JNIAware {
 
 public:
-    Logger(JNIEnv *env) : JNIAware(env, "com/alloc64/jni/TLJNIBridge", std::vector<JNINativeMethod>{
-            {"a13", "(Ljava/lang/Object)V", (void *) (Logger::setJNIBridgeInstance)},
-    }) {
+    Logger(JavaVM *vm, JNIEnv *env) : JNIAware(vm, "com/alloc64/jni/TLJNIBridge",
+                                   std::vector<JNINativeMethod>{
+                                           {"a13", "(Lcom/alloc64/jni/TLJNIBridge;)V", (void *) (Logger::setJNIBridgeInstance)},
+                                   }, env) {
         this->instance = this;
     }
+    ~Logger() {
+        auto env = getJNIEnv();
 
+        if(jniBridgeInstance != nullptr && env != nullptr) {
+            env->DeleteGlobalRef(jniBridgeInstance);
+            this->jniBridgeInstance = nullptr;
+        }
+    }
     static void d(const char *tag, const char *msg, ...);
 
     static void e(const char *tag, const char *msg, ...);

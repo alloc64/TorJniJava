@@ -7,7 +7,8 @@
 
 #define TAG "tl/JNI"
 
-JNIAware::JNIAware(JNIEnv *env, const char* className, std::vector<JNINativeMethod> methods) {
+JNIAware::JNIAware(JavaVM *vm, const char *className, std::vector<JNINativeMethod> methods, JNIEnv *env) {
+    this->vm = vm;
     this->env = env;
     this->className = className;
 
@@ -27,6 +28,10 @@ int JNIAware::registerNativeMethods(const char* className, std::vector<JNINative
     }
 
     return JNI_TRUE;
+}
+
+JavaVM *JNIAware::getVM() const {
+    return vm;
 }
 
 JNIEnv *JNIAware::getJNIEnv() const {

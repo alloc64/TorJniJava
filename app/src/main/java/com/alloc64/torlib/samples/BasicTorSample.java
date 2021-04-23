@@ -26,7 +26,7 @@ public class BasicTorSample
 
     protected void create(Activity ctx)
     {
-        TLJNIBridge bridge = new TLJNIBridge();
+        TLJNIBridge bridge = TLJNIBridge.get();
 
         try
         {

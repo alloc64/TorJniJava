@@ -26,6 +26,7 @@ typedef enum LogPriority {
 } LogPriority;
 
 
-__attribute__((weak)) void JNILog(LogPriority priority, const char *tag, const char *msg, ...);
+typedef void(*JNILogPtr)(LogPriority priority, const char *tag, const char *msg, ...);
+extern JNILogPtr JNILog;
 
 #endif //LOGGERTYPEDEF_H
