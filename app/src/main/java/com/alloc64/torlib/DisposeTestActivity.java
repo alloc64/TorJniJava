@@ -1,8 +1,11 @@
 package com.alloc64.torlib;
 
 import android.app.Activity;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
+import android.view.View;
 import android.widget.TextView;
 
 import com.alloc64.jni.TLJNIBridge;
@@ -10,6 +13,7 @@ import com.alloc64.torlib.control.PasswordDigest;
 import com.alloc64.torlib.control.TorControlSocket;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -23,6 +27,7 @@ public class DisposeTestActivity extends Activity
 
     private TextView torStatus;
     private TextView pdnsdStatus;
+    private TextView tun2SocksStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -46,6 +51,10 @@ public class DisposeTestActivity extends Activity
         this.pdnsdStatus = findViewById(R.id.pdnsd_status);
         findViewById(R.id.start_pdnsd).setOnClickListener(v -> startPdnsd());
         findViewById(R.id.stop_pdnsd).setOnClickListener(v -> stopPdnsd());
+
+        this.tun2SocksStatus = findViewById(R.id.tun2socks_status);
+        findViewById(R.id.start_tun2socks).setOnClickListener(v -> startTun2Socks());
+        findViewById(R.id.stop_tun2socks).setOnClickListener(v -> stopTun2Socks());
     }
 
     private void startTor()
@@ -126,5 +135,51 @@ public class DisposeTestActivity extends Activity
                 .destroyPdnsd();
 
         pdnsdStatus.setText("PDNSd is destroyed");
+    }
+
+    private void startTun2Socks()
+    {
+        if (!TLJNIBridge.get().getTun2Socks().isInterfaceRunning())
+            pdnsdStatus.setText("TUN2Socks is starting");
+
+        int VPN_MTU = 1500;
+
+        String clientIp = "172.0.21.1";
+
+        try
+        {
+            File f = new File(getFilesDir(), "test.tun");
+            f.createNewFile();
+
+            ParcelFileDescriptor tunInterface = ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_WRITE);
+
+            TLJNIBridge
+                    .get()
+                    .getTun2Socks()
+                    .createInterface(
+                            tunInterface.detachFd(),
+                            VPN_MTU,
+                            clientIp,
+                            "255.255.255.0",
+                            String.format("%s:%d", socksPort.getHostString(), socksPort.getPort()),
+                            String.format("%s:%d", clientIp, dnsPort.getPort()));
+
+            if (TLJNIBridge.get().getTun2Socks().isInterfaceRunning())
+                pdnsdStatus.setText("TUN2Socks should be running now");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private void stopTun2Socks()
+    {
+        TLJNIBridge
+                .get()
+                .getTun2Socks()
+                .destroyInterface();
+
+        pdnsdStatus.setText("TUN2Socks is destroyed");
     }
 }

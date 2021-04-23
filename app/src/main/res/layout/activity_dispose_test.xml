@@ -39,4 +39,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Stop PDNSD" />
+
+    <TextView
+        android:id="@+id/tun2socks_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TUN2Socks not running"/>
+    <Button
+        android:id="@+id/start_tun2socks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start TUN2Socks" />
+
+    <Button
+        android:id="@+id/stop_tun2socks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop TUN2Socks" />
 </LinearLayout>

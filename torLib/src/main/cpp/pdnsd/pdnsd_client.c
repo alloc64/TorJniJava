@@ -615,6 +615,9 @@ int runPdnsd(int argc, char *argv[]) {
 }
 
 void terminatePdnsd() {
+    //TODO: fix hang in configuration parsing
+    //TODO: fix double termination, which kills parent process
+
     if(main_thrid > 0) {
         pthread_kill(main_thrid, SIGTERM);
         main_thrid = 0;
