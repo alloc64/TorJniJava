@@ -68,6 +68,12 @@ void Logger::w(const char *tag, const char *msg, ...) {
     va_end(ap);
 }
 
+/**
+ * Internal logging method, which transforms va_args into full string message.
+ *
+ * This method may be called from any thread, so any calls to managed world are made in separate thread via queue.
+ *
+ */
 void Logger::log(LogPriority priority, const char *tag, const char *msg, va_list args) {
     auto temp = std::vector<char>{};
     auto length = std::size_t{63};
@@ -81,44 +87,74 @@ void Logger::log(LogPriority priority, const char *tag, const char *msg, va_list
         length = static_cast<std::size_t>(status);
     }
 
-    const char *string = temp.data();
-
+    auto string = temp.data();
     auto thiz = getInstance();
 
     if (thiz != nullptr) {
-        auto jniBridgeInstance = thiz->jniBridgeInstance;
-
-        if (jniBridgeInstance != nullptr) {
-            auto vm = thiz->getVM();
-
-            if (vm != nullptr) {
-                JNIEnv *env;
-                vm->AttachCurrentThread(&env, nullptr); //TODO: queue logs & dispatch them in another thread
-
-                jclass clazz = env->GetObjectClass(jniBridgeInstance);
-                auto logMethod = env->GetMethodID(clazz, "a12",
-                                                  "(ILjava/lang/String;Ljava/lang/String;)V");
-
-                if (logMethod != nullptr) {
-                    jstring jtag = env->NewStringUTF((const char *) tag);
-                    jstring jstring = env->NewStringUTF((const char *) string);
-
-                    env->CallVoidMethod(jniBridgeInstance, logMethod, priority, jtag, jstring);
-                } else {
-                    logFallback(priority, tag, string);
-                }
-
-                //if (attached)
-                //    vm->DetachCurrentThread();
-            } else {
-                logFallback(priority, tag, string);
-            }
-        }
+        thiz->enqueueLog(new LogEntry(priority, tag, string));
     } else {
         logFallback(priority, tag, string);
     }
 }
 
+void Logger::enqueueLog(LogEntry *logEntry) {
+    {
+        std::unique_lock<std::mutex> lock(this->mutex);
+        this->queue.push_front(logEntry);
+    }
+
+    this->condition.notify_one();
+}
+
 void Logger::setJNIBridgeInstance(JNIEnv *env, jobject instance) {
-    getInstance()->jniBridgeInstance = env->NewGlobalRef(instance);
+    auto thiz = getInstance();
+
+    thiz->jniBridgeInstance = env->NewGlobalRef(instance);
+
+    if(!thiz->isRunning())
+        thiz->start();
+}
+
+void Logger::run() {
+    if (jniBridgeInstance == nullptr)
+        return;
+
+    auto vm = this->getVM();
+
+    if (vm == nullptr)
+        return;
+
+    JNIEnv *env;
+    vm->AttachCurrentThread(&env, nullptr);
+
+    jclass clazz = env->GetObjectClass(jniBridgeInstance);
+    auto logMethod = env->GetMethodID(clazz, "a12",
+                                      "(ILjava/lang/String;Ljava/lang/String;)V");
+
+    while (isRunning()) {
+        std::unique_lock<std::mutex> lock(this->mutex);
+        this->condition.wait(lock, [=] { return !this->queue.empty(); });
+
+        LogEntry *logEntry = this->queue.back();
+        this->queue.pop_back();
+
+        if (logEntry == nullptr)
+            return;
+
+        if (logMethod == nullptr) {
+            logFallback(logEntry->priority, logEntry->tag, logEntry->msg);
+        } else {
+            jstring jtag = env->NewStringUTF((const char *) logEntry->tag);
+            jstring jstring = env->NewStringUTF((const char *) logEntry->msg);
+
+            env->CallVoidMethod(jniBridgeInstance, logMethod, logEntry->priority, jtag, jstring);
+
+            env->DeleteLocalRef(jtag);
+            env->DeleteLocalRef(jstring);
+        }
+    }
+
+    vm->DetachCurrentThread();
+
+    Thread::run();
 }
