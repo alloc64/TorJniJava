@@ -53,7 +53,7 @@ public class PasswordDigest
             specifier[8] = 96;
         }
 
-        this.hashedKey = Bytes.hex(secretToKey(secret, specifier));
+        this.hashedKey = "16:"+Bytes.hex(secretToKey(secret, specifier));
     }
 
     /**

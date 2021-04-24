@@ -1,11 +1,9 @@
 package com.alloc64.torlib;
 
 import android.app.Activity;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
-import android.view.View;
 import android.widget.TextView;
 
 import com.alloc64.jni.TLJNIBridge;
@@ -13,7 +11,6 @@ import com.alloc64.torlib.control.PasswordDigest;
 import com.alloc64.torlib.control.TorControlSocket;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -62,6 +59,8 @@ public class DisposeTestActivity extends Activity
         if (!TLJNIBridge.get().getTor().isTorRunning())
             torStatus.setText("Tor is starting");
 
+        PasswordDigest controlPortPassword = PasswordDigest.generateDigest();
+
         TLJNIBridge
                 .get()
                 .getTor()
@@ -74,9 +73,10 @@ public class DisposeTestActivity extends Activity
                         .setDnsPort(dnsPort)
                         .setSafeLogging("0")
                         .setControlPort(controlPort)
-                        .setDataDirectory(dataDirectory))
+                        .setDataDirectory(dataDirectory)
+                        .setHashedControlPassword(controlPortPassword))
                 .startTor()
-                .attachControlPort(controlPort, PasswordDigest.generateDigest(), new TorControlSocket.TorEventHandler()
+                .attachControlPort(controlPort, controlPortPassword, new TorControlSocket.TorEventHandler()
                 {
                     @Override
                     public void onConnected(TorControlSocket socket)

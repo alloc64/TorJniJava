@@ -2020,10 +2020,15 @@ public class TorConfig extends ArgConfig
      * @param severity - {@link LogSeverity}
      * @param output   - stderr|stdout|syslog (Android seems to support syslog only.)
      */
+    public TorConfig setLog(LogSeverity severity, String output)
+    {
+        addCommand(LOG, String.format("%s %s", severity.getValue(), output));
+        return this;
+    }
+
     public TorConfig setLog(LogSeverity severity, LogOutput output)
     {
-        addCommand(LOG, String.format("%s %s", severity.getValue(), output.getValue()));
-        return this;
+        return setLog(severity, output.getValue());
     }
 
     /**
@@ -2267,6 +2272,13 @@ public class TorConfig extends ArgConfig
     public TorConfig setDormantOnFirstStartup(boolean enabled)
     {
         addCommand(DORMANT_ON_FIRST_STARTUP, convertBoolean(enabled));
+        return this;
+    }
+
+    @Override
+    public TorConfig addCommand(String... command)
+    {
+        super.addCommand(command);
         return this;
     }
 }

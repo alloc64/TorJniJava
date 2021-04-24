@@ -39,6 +39,8 @@ public class BasicTorSampleActivity extends Activity
 
             TLJNIBridge.Tor tor = bridge.getTor();
 
+            PasswordDigest controlPortPassword = PasswordDigest.generateDigest();
+
             tor.createTorConfig()
                     .setTorCommandLine(new TorConfig()
                             .addAllowMissingTorrc()
@@ -48,9 +50,10 @@ public class BasicTorSampleActivity extends Activity
                             .setDnsPort(dnsPort)
                             .setSafeLogging("0")
                             .setControlPort(controlPort)
-                            .setDataDirectory(dataDirectory))
+                            .setDataDirectory(dataDirectory)
+                            .setHashedControlPassword(controlPortPassword))
                     .startTor()
-                    .attachControlPort(controlPort, PasswordDigest.generateDigest(), new TorControlSocket.TorEventHandler()
+                    .attachControlPort(controlPort, controlPortPassword, new TorControlSocket.TorEventHandler()
                     {
                         @Override
                         public void onConnected(TorControlSocket socket)

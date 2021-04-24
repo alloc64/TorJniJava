@@ -53,6 +53,8 @@ public class TorVpnProvider
 
             TLJNIBridge.get().setMainThreadDispatcher(mainThreadHandler::post);
 
+            PasswordDigest controlPortPassword = PasswordDigest.generateDigest();
+
             TLJNIBridge
                     .get()
                     .getTor()
@@ -65,9 +67,12 @@ public class TorVpnProvider
                             .setDnsPort(dnsPort)
                             .setSafeLogging("0")
                             .setControlPort(controlPort)
+                            .setHashedControlPassword(controlPortPassword)
+                            .addCommand("SafeSocks", "0")
+                            .addCommand("TestSocks", "0")
                             .setDataDirectory(dataDirectory))
                     .startTor()
-                    .attachControlPort(controlPort, PasswordDigest.generateDigest(), new TorControlSocket.TorEventHandler()
+                    .attachControlPort(controlPort, controlPortPassword, new TorControlSocket.TorEventHandler()
                     {
                         @Override
                         public void onConnected(TorControlSocket socket)

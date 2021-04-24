@@ -70,13 +70,14 @@ private:
 
     static void setJNIBridgeInstance(JNIEnv *env, jobject instance);
 
+    void enqueueLog(LogEntry *logEntry);
+
     jobject jniBridgeInstance = nullptr;
 
     std::mutex mutex;
     std::condition_variable condition;
     std::deque<LogEntry*> queue;
 
-    void enqueueLog(LogEntry *logEntry);
 };
 
 #endif //LOGGER_H
