@@ -76,15 +76,12 @@ public class DisposeTestActivity extends Activity
                         .setDataDirectory(dataDirectory)
                         .setHashedControlPassword(controlPortPassword))
                 .startTor()
-                .attachControlPort(controlPort, controlPortPassword, new TorControlSocket.TorEventHandler()
+                .attachControlPort(controlPort, new TorControlSocket(controlPortPassword, new TorControlSocket.ConnectionHandler()
                 {
                     @Override
                     public void onConnected(TorControlSocket socket)
                     {
                         super.onConnected(socket);
-
-                        socket.sendAsync("GETINFO status/bootstrap-phase\r\n",
-                                (socket1, reply) -> torStatus.setText(String.format("Tor is in state: %s", reply.getMessage())));
                     }
 
                     @Override
@@ -92,7 +89,7 @@ public class DisposeTestActivity extends Activity
                     {
                         e.printStackTrace();
                     }
-                });
+                }));
     }
 
     private void stopTor()

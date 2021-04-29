@@ -15,6 +15,7 @@ import com.alloc64.torlib.control.TorControlSocket;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.List;
 
 public class BasicTorSampleActivity extends Activity
 {
@@ -53,7 +54,7 @@ public class BasicTorSampleActivity extends Activity
                             .setDataDirectory(dataDirectory)
                             .setHashedControlPassword(controlPortPassword))
                     .startTor()
-                    .attachControlPort(controlPort, controlPortPassword, new TorControlSocket.TorEventHandler()
+                    .attachControlPort(controlPort, new TorControlSocket(controlPortPassword, new TorControlSocket.ConnectionHandler()
                     {
                         @Override
                         public void onConnected(TorControlSocket socket)
@@ -63,7 +64,7 @@ public class BasicTorSampleActivity extends Activity
                             socket.sendAsync("GETINFO status/bootstrap-phase\r\n", new TorControlSocket.Callback()
                             {
                                 @Override
-                                public void onResult(TorControlSocket socket, TorControlSocket.Reply reply)
+                                public void onResult(List<TorControlSocket.Reply> replyList)
                                 {
                                     System.currentTimeMillis();
 
@@ -79,7 +80,7 @@ public class BasicTorSampleActivity extends Activity
 
                             e.printStackTrace();
                         }
-                    });
+                    }));
 
             this.httpClient = tor
                     .createOkHttpClient(socksPort)

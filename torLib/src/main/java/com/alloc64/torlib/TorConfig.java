@@ -1,6 +1,7 @@
 package com.alloc64.torlib;
 
 import com.alloc64.torlib.control.PasswordDigest;
+import com.alloc64.torlib.control.TorControlSocket;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -1761,30 +1762,36 @@ import java.util.List;
  */
 public class TorConfig extends ArgConfig
 {
-    private static final String ALLOW_MISSING_TORRC = "--allow-missing-torrc";
-    private static final String CONTROL_PORT = "--ControlPort";
-    private static final String COOKIE_AUTHENTICATION = "--CookieAuthentication";
-    private static final String COOKIE_AUTH_FILE = "--CookieAuthFile";
-    private static final String HASHED_CONTROL_PASSWORD = "--HashedControlPassword";
-    private static final String DATA_DIRECTORY = "--DataDirectory";
-    private static final String HTTPS_PROXY = "--HTTPSProxy";
-    private static final String HTTPS_PROXY_AUTHENTICATOR = "--HTTPSProxyAuthenticator";
-    private static final String SOCKS5_PROXY = "--Socks5Proxy";
-    private static final String SOCKS5_PROXY_PASSWORD = "--Socks5ProxyPassword";
-    private static final String KEEPALIVE_PERIOD = "--KeepalivePeriod";
-    private static final String LOG = "--Log";
-    private static final String RUN_AS_DAEMON = "--RunAsDaemon";
-    private static final String SAFE_LOGGING = "--SafeLogging";
-    private static final String DORMANT_ON_FIRST_STARTUP = "--DormantOnFirstStartup";
+    public static final String ALLOW_MISSING_TORRC = "--allow-missing-torrc";
+    public static final String CONTROL_PORT = "ControlPort";
+    public static final String DISABLE_NETWORK = "DisableNetwork";
+    public static final String COOKIE_AUTHENTICATION = "CookieAuthentication";
+    public static final String COOKIE_AUTH_FILE = "CookieAuthFile";
+    public static final String HASHED_CONTROL_PASSWORD = "HashedControlPassword";
+    public static final String DATA_DIRECTORY = "DataDirectory";
+    public static final String HTTPS_PROXY = "HTTPSProxy";
+    public static final String HTTPS_PROXY_AUTHENTICATOR = "HTTPSProxyAuthenticator";
+    public static final String SOCKS5_PROXY = "Socks5Proxy";
+    public static final String SOCKS5_PROXY_PASSWORD = "Socks5ProxyPassword";
+    public static final String TRANS_PORT = "TransPort";
+    public static final String KEEPALIVE_PERIOD = "KeepalivePeriod";
+    public static final String LOG = "Log";
+    public static final String RUN_AS_DAEMON = "RunAsDaemon";
+    public static final String SAFE_LOGGING = "SafeLogging";
+    public static final String DORMANT_ON_FIRST_STARTUP = "DormantOnFirstStartup";
 
-    private static final String BRIDGE = "--Bridge";
-    private static final String USE_BRIDGES = "--UseBridges";
-    private static final String EXIT_NODES = "--ExitNodes";
-    private static final String ENTRY_NODES = "--EntryNodes";
-    private static final String FASCIST_FIREWALL = "--FascistFirewall";
-    private static final String SOCKS_PORT = "--SOCKSPort";
-    private static final String DNS_PORT = "--DNSPort";
-    private static final String EXIT_RELAY = "--ExitRelay";
+    public static final String BRIDGE = "Bridge";
+    public static final String USE_BRIDGES = "UseBridges";
+    public static final String EXIT_NODES = "ExitNodes";
+    public static final String ENTRY_NODES = "EntryNodes";
+    public static final String FASCIST_FIREWALL = "FascistFirewall";
+    public static final String SOCKS_PORT = "SOCKSPort";
+    public static final String DNS_PORT = "DNSPort";
+    public static final String EXIT_RELAY = "ExitRelay";
+
+    public static final String GEO_IP_FILE = "GeoIPFile";
+    public static final String GEO_IP_V6_FILE = "GeoIPv6File";
+    public static final String STRICT_NODES = "StrictNodes";
 
     public enum LogSeverity
     {
@@ -1863,7 +1870,27 @@ public class TorConfig extends ArgConfig
     public TorConfig setControlPort(String value)
     {
         validate(value);
-        addCommand(CONTROL_PORT, value);
+        addCommandPrefixed(CONTROL_PORT, value);
+        return this;
+    }
+
+    /*
+     * Disable network calls
+     *
+     * DisableNetwork 0|1
+     * When this option is set, we don’t listen for or accept any connections other than controller connections,
+     * and we close (and don’t reattempt) any outbound connections. Controllers sometimes use this option to
+     * avoid using the network until Tor is fully configured.
+     *
+     * Tor will make still certain network-related calls (like DNS lookups) as a part of its configuration process,
+     * even if DisableNetwork is set.
+     *
+     * (Default: 0)
+     **/
+    public TorConfig setDisableNetwork(String value)
+    {
+        validate(value);
+        addCommandPrefixed(DISABLE_NETWORK, value);
         return this;
     }
 
@@ -1884,7 +1911,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setCookieAuthentication(boolean enabled)
     {
-        addCommand(COOKIE_AUTHENTICATION, convertBoolean(enabled));
+        addCommandPrefixed(COOKIE_AUTHENTICATION, convertBoolean(enabled));
         return this;
     }
 
@@ -1901,7 +1928,7 @@ public class TorConfig extends ArgConfig
         if (file == null || !file.exists())
             throw new IllegalArgumentException("Invalid file.");
 
-        addCommand(COOKIE_AUTH_FILE, file.getAbsolutePath());
+        addCommandPrefixed(COOKIE_AUTH_FILE, file.getAbsolutePath());
         return this;
     }
     
@@ -1910,7 +1937,7 @@ public class TorConfig extends ArgConfig
         if(password == null)
             throw new IllegalArgumentException("Invalid password.");
 
-        addCommand(HASHED_CONTROL_PASSWORD, password.getHashedPassword());
+        addCommandPrefixed(HASHED_CONTROL_PASSWORD, password.getHashedPassword());
         return this;
     }
 
@@ -1927,7 +1954,7 @@ public class TorConfig extends ArgConfig
         if (directory == null || !directory.exists())
             throw new IllegalArgumentException("Invalid data directory.");
 
-        addCommand(DATA_DIRECTORY, directory.getAbsolutePath());
+        addCommandPrefixed(DATA_DIRECTORY, directory.getAbsolutePath());
         return this;
     }
 
@@ -1944,7 +1971,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setHttpsProxy(String value)
     {
         validate(value);
-        addCommand(HTTPS_PROXY, value);
+        addCommandPrefixed(HTTPS_PROXY, value);
         return this;
     }
 
@@ -1960,7 +1987,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setHttpsProxyAuthenticator(String value)
     {
         validate(value);
-        addCommand(HTTPS_PROXY_AUTHENTICATOR, value);
+        addCommandPrefixed(HTTPS_PROXY_AUTHENTICATOR, value);
         return this;
     }
 
@@ -1974,7 +2001,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setSocks5Proxy(String value)
     {
         validate(value);
-        addCommand(SOCKS5_PROXY, value);
+        addCommandPrefixed(SOCKS5_PROXY, value);
         return this;
     }
 
@@ -1989,7 +2016,28 @@ public class TorConfig extends ArgConfig
     public TorConfig setSocks5ProxyPassword(String value)
     {
         validate(value);
-        addCommand(SOCKS5_PROXY_PASSWORD, value);
+        addCommandPrefixed(SOCKS5_PROXY_PASSWORD, value);
+        return this;
+    }
+
+    /**
+     * Set transparent proxy port
+     * Open this port to listen for transparent proxy connections. Set this to 0 if you don’t want to allow transparent proxy connections.
+     * Set the port to "auto" to have Tor pick a port for you. This directive can be specified multiple times to bind to multiple addresses/ports.
+     * If multiple entries of this option are present in your configuration file, Tor will perform stream isolation between listeners by default.
+     * See SOCKSPort for an explanation of isolation flags.
+     *
+     * TransPort requires OS support for transparent proxies, such as BSDs' pf or Linux’s IPTables.
+     * If you’re planning to use Tor as a transparent proxy for a network, you’ll want to examine and change
+     * VirtualAddrNetwork from the default setting.
+     * (Default: 0)
+     *
+     * @param value
+     */
+    public TorConfig setTransPort(String value)
+    {
+        validate(value);
+        addCommandPrefixed(TRANS_PORT, value);
         return this;
     }
 
@@ -2004,7 +2052,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setKeepalivePeriod(int value)
     {
-        addCommand(KEEPALIVE_PERIOD, String.valueOf(value));
+        addCommandPrefixed(KEEPALIVE_PERIOD, String.valueOf(value));
         return this;
     }
 
@@ -2022,7 +2070,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setLog(LogSeverity severity, String output)
     {
-        addCommand(LOG, String.format("%s %s", severity.getValue(), output));
+        addCommandPrefixed(LOG, String.format("%s %s", severity.getValue(), output));
         return this;
     }
 
@@ -2044,7 +2092,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setRunAsDaemon(boolean enabled)
     {
-        addCommand(RUN_AS_DAEMON, convertBoolean(enabled));
+        addCommandPrefixed(RUN_AS_DAEMON, convertBoolean(enabled));
         return this;
     }
 
@@ -2066,7 +2114,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setSafeLogging(String value)
     {
         validate(value);
-        addCommand(SAFE_LOGGING, value);
+        addCommandPrefixed(SAFE_LOGGING, value);
 
         return this;
     }
@@ -2082,7 +2130,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setUseBridges(boolean enabled)
     {
-        addCommand(USE_BRIDGES, convertBoolean(enabled));
+        addCommandPrefixed(USE_BRIDGES, convertBoolean(enabled));
         return this;
     }
 
@@ -2109,7 +2157,7 @@ public class TorConfig extends ArgConfig
     public TorConfig addBridge(String value)
     {
         validate(value);
-        addCommand(BRIDGE, value);
+        addCommandPrefixed(BRIDGE, value);
         return this;
     }
 
@@ -2138,7 +2186,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setExitNodes(String value)
     {
         validate(value);
-        addCommand(EXIT_NODES, value);
+        addCommandPrefixed(EXIT_NODES, value);
         return this;
     }
 
@@ -2158,7 +2206,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setEntryNodes(String value)
     {
         validate(value);
-        addCommand(ENTRY_NODES, value);
+        addCommandPrefixed(ENTRY_NODES, value);
         return this;
     }
 
@@ -2177,7 +2225,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setFascistFirewall(boolean enabled)
     {
-        addCommand(FASCIST_FIREWALL, convertBoolean(enabled));
+        addCommandPrefixed(FASCIST_FIREWALL, convertBoolean(enabled));
         return this;
     }
 
@@ -2205,7 +2253,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setSocksPort(String value)
     {
         validate(value);
-        addCommand(SOCKS_PORT, value);
+        addCommandPrefixed(SOCKS_PORT, value);
         return this;
     }
 
@@ -2231,7 +2279,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setDnsPort(String value)
     {
         validate(value);
-        addCommand(DNS_PORT, value);
+        addCommandPrefixed(DNS_PORT, value);
         return this;
     }
 
@@ -2255,7 +2303,7 @@ public class TorConfig extends ArgConfig
     public TorConfig setExitRelay(String value)
     {
         validate(value);
-        addCommand(EXIT_RELAY, value);
+        addCommandPrefixed(EXIT_RELAY, value);
         return this;
     }
 
@@ -2271,7 +2319,7 @@ public class TorConfig extends ArgConfig
      */
     public TorConfig setDormantOnFirstStartup(boolean enabled)
     {
-        addCommand(DORMANT_ON_FIRST_STARTUP, convertBoolean(enabled));
+        addCommandPrefixed(DORMANT_ON_FIRST_STARTUP, convertBoolean(enabled));
         return this;
     }
 
@@ -2280,5 +2328,13 @@ public class TorConfig extends ArgConfig
     {
         super.addCommand(command);
         return this;
+    }
+
+    public TorConfig addCommandPrefixed(String... command)
+    {
+        if(command.length > 0 && command[0] != null)
+            command[0] = "--" + command[0];
+
+        return addCommand(command);
     }
 }

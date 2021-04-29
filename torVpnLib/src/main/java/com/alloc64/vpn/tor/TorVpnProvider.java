@@ -1,34 +1,42 @@
 package com.alloc64.vpn.tor;
 
-import android.content.Context;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 
 import com.alloc64.jni.TLJNIBridge;
+import com.alloc64.torlib.PdnsdConfig;
 import com.alloc64.torlib.TorConfig;
 import com.alloc64.torlib.control.PasswordDigest;
 import com.alloc64.torlib.control.TorControlSocket;
+import com.alloc64.torlib.control.TorEventSocket;
 
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
+import java.util.Locale;
 
 public class TorVpnProvider
 {
+    private static final String TAG = TorVpnProvider.class.toString();
+
     private final static int VPN_MTU = 1500;
 
     String gatewayIp = "192.168.200.1";
     String clientIp = "192.168.200.2";
+    int gatewaySocksPort = 9055;
 
-    private InetSocketAddress socksAddress = InetSocketAddress.createUnresolved("0.0.0.0", 9050);
+    private InetSocketAddress torSocksAddress = InetSocketAddress.createUnresolved("0.0.0.0", 9050);
     private InetSocketAddress controlPortAddress = InetSocketAddress.createUnresolved("127.0.0.1", 9051);
     private InetSocketAddress dnsAddress = InetSocketAddress.createUnresolved("0.0.0.0", 9053);
     private InetSocketAddress cachingDnsAddress = InetSocketAddress.createUnresolved(gatewayIp, 9054);
 
-    public void start(Context ctx, VpnService.Builder builder)
+    private SocksServerTunInterface socksServerTunInterface = new SocksServerTunInterface(gatewaySocksPort);
+
+    public void start(VpnService ctx, VpnService.Builder builder)
     {
         try
         {
@@ -53,6 +61,15 @@ public class TorVpnProvider
 
             TLJNIBridge.get().setMainThreadDispatcher(mainThreadHandler::post);
 
+            try
+            {
+                socksServerTunInterface.start(ctx);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
             PasswordDigest controlPortPassword = PasswordDigest.generateDigest();
 
             TLJNIBridge
@@ -63,29 +80,44 @@ public class TorVpnProvider
                             .addAllowMissingTorrc()
                             .setLog(TorConfig.LogSeverity.Notice, TorConfig.LogOutput.Syslog)
                             .setRunAsDaemon(false)
-                            .setSocksPort(socksAddress)
+                            .setControlPort(controlPortAddress)
+                            .setSocksPort(torSocksAddress)
                             .setDnsPort(dnsAddress)
                             .setSafeLogging("0")
-                            .setControlPort(controlPortAddress)
+                            .setSocks5Proxy("127.0.0.1:" + gatewaySocksPort)
                             .setHashedControlPassword(controlPortPassword)
-                            .addCommand("SafeSocks", "0")
-                            .addCommand("TestSocks", "0")
                             .setDataDirectory(dataDirectory))
                     .startTor()
-                    .attachControlPort(controlPortAddress, controlPortPassword, new TorControlSocket.TorEventHandler()
+                    .attachControlPort(controlPortAddress, new TorControlSocket(controlPortPassword, new TorControlSocket.ConnectionHandler()
                     {
                         @Override
                         public void onConnectedAsync(TorControlSocket socket)
                         {
-                            onTorInitialized(socket, dataDirectory, tunInterface);
+                            onTorInitializedAsync(ctx, socket, dataDirectory, tunInterface);
                         }
 
                         @Override
                         public void onException(TorControlSocket socket, Exception e)
                         {
-                            e.printStackTrace();
+                            TorVpnProvider.this.onException(e);
                         }
-                    });
+                    }), new TorEventSocket(controlPortPassword, Arrays.asList("CIRC", "STREAM", "ORCONN", "BW", "NOTICE", "ERR", "NEWDESC", "ADDRMAP"), new TorEventSocket.EventHandler()
+                    {
+                        @Override
+                        public void onEvent(TorEventSocket socket, List<TorControlSocket.Reply> replyList)
+                        {
+                            for(TorControlSocket.Reply r : replyList)
+                                Log.i(TAG, "Received TOR event: " + r.getMessage());
+
+                            System.currentTimeMillis();
+                        }
+
+                        @Override
+                        public void onException(TorEventSocket socket, Exception e)
+                        {
+                            TorVpnProvider.this.onException(e);
+                        }
+                    }));
         }
         catch (Exception e)
         {
@@ -93,48 +125,47 @@ public class TorVpnProvider
         }
     }
 
-
     /**
      * Called from another thread
      *
+     * @param ctx
      * @param socket
      * @param dataDirectory
      * @param tunInterface
      */
-    private void onTorInitialized(TorControlSocket socket, File dataDirectory, ParcelFileDescriptor tunInterface)
+    private void onTorInitializedAsync(VpnService ctx, TorControlSocket socket, File dataDirectory, ParcelFileDescriptor tunInterface)
     {
-        Map<String, String> info = socket.getInfo(Arrays.asList(
-                "net/listeners/socks",
-                "net/listeners/httptunnel",
-                "net/listeners/dns",
-                "net/listeners/trans"
-        ));
+        TLJNIBridge.Tor tor = TLJNIBridge.get().getTor();
 
-        /*
+        TLJNIBridge.get().getMainThreadDispatcher().dispatch(() ->
+        {
+            TLJNIBridge
+                    .get()
+                    .getPdnsd()
+                    .startPdnsd(new PdnsdConfig()
+                            .setBaseDir(dataDirectory)
+                            .setUpstreamDnsAddress(InetSocketAddress.createUnresolved(gatewayIp, dnsAddress.getPort()))
+                            .setDnsServerAddress(cachingDnsAddress)
+                    );
 
-        TLJNIBridge
-                .get()
-                .getPdnsd()
-                .startPdnsd(new PdnsdConfig()
-                        .setBaseDir(dataDirectory)
-                        .setUpstreamDnsAddress(InetSocketAddress.createUnresolved(gatewayIp, dnsAddress.getPort()))
-                        .setDnsServerAddress(cachingDnsAddress)
-                );
+            String socksAddress = String.format(Locale.US, "%s:%d", "127.0.0.1", torSocksAddress.getPort());
+            String dnsAddress = String.format(Locale.US, "%s:%d", gatewayIp, cachingDnsAddress.getPort());
 
-        String socksAddress = String.format(Locale.US, "%s:%d", "127.0.0.1", this.socksAddress.getPort());
-        String dnsAddress = String.format(Locale.US, "%s:%d", gatewayIp, this.cachingDnsAddress.getPort());
+            TLJNIBridge
+                    .get()
+                    .getTun2Socks()
+                    .createInterface(
+                            tunInterface.detachFd(),
+                            VPN_MTU,
+                            clientIp,
+                            "255.255.255.0",
+                            socksAddress,
+                            dnsAddress);
+        });
+    }
 
-        TLJNIBridge
-                .get()
-                .getTun2Socks()
-                .createInterface(
-                        tunInterface.detachFd(),
-                        VPN_MTU,
-                        clientIp,
-                        "255.255.255.0",
-                        socksAddress,
-                        dnsAddress);
-
-         */
+    private void onException(Exception e)
+    {
+        e.printStackTrace();
     }
 }

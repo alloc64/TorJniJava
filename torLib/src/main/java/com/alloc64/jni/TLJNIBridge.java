@@ -5,12 +5,16 @@ import android.util.Log;
 import com.alloc64.http.ProxiedSocketFactory;
 import com.alloc64.torlib.PdnsdConfig;
 import com.alloc64.torlib.TorConfig;
-import com.alloc64.torlib.control.PasswordDigest;
+import com.alloc64.torlib.control.TorAbstractControlSocket;
 import com.alloc64.torlib.control.TorControlSocket;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 
@@ -20,7 +24,8 @@ public class TLJNIBridge
 
     public class Tor
     {
-        private TorControlSocket controlPortSocket;
+        private final List<TorControlSocket> controlPortSockets = new ArrayList<>();
+        private TorControlSocket defaultControlSocket;
 
         public String getTorVersion()
         {
@@ -49,35 +54,99 @@ public class TLJNIBridge
             return this;
         }
 
-        public Tor attachControlPort(InetSocketAddress socketAddress, PasswordDigest password, TorControlSocket.TorEventHandler eventHandler)
+        public Tor attachControlPort(InetSocketAddress socketAddress, TorAbstractControlSocket... controlSockets)
         {
-            if (controlPortSocket == null)
+            for (TorAbstractControlSocket s : controlSockets)
             {
-                this.controlPortSocket = new TorControlSocket(password, eventHandler);
-                controlPortSocket.connect(socketAddress);
+                s.connect(socketAddress);
+
+                if (s instanceof TorControlSocket)
+                    this.defaultControlSocket = (TorControlSocket) s;
             }
 
             return this;
         }
 
-        public TorControlSocket getControlPortSocket()
+        private TorControlSocket getControlPortSocket()
         {
-            return controlPortSocket;
+            return defaultControlSocket;
         }
 
-        public void detachControlPort() throws IOException
+        public void detachControlPort()
         {
-            if (controlPortSocket == null)
+            for (TorControlSocket s : controlPortSockets)
+            {
+                try
+                {
+                    if (s != null)
+                        s.close();
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            controlPortSockets.clear();
+
+            this.defaultControlSocket = null;
+        }
+
+        public void setTorConf(String key, String value)
+        {
+            if (defaultControlSocket != null)
+                defaultControlSocket.setConf(key, value);
+        }
+
+        public void setNetworkEnabled(boolean isEnabled)
+        {
+            setTorConf(TorConfig.DISABLE_NETWORK, isEnabled ? "0" : "1");
+        }
+
+        private void reloadTorNetwork()
+        {
+            setNetworkEnabled(true);
+            setNetworkEnabled(false);
+        }
+
+        /**
+         * Set GEO IP files for exit node targeting by country code and more.
+         *
+         * @param ipv4
+         * @param ipv6
+         */
+        public void setGeoIPFiles(File ipv4, File ipv6)
+        {
+            setTorConf(TorConfig.GEO_IP_FILE, ipv4.getAbsolutePath());
+            setTorConf(TorConfig.GEO_IP_V6_FILE, ipv6.getAbsolutePath());
+        }
+
+        /**
+         * Set targeting by country code, or by exit node ID.
+         *
+         * GEO IP files must be set in case you are targeting with country codes.
+         * See {@link #setGeoIPFiles(File, File)}.
+         *
+         * @param exitNodeTargeting
+         */
+        public void setExitNodeTargeting(String exitNodeTargeting)
+        {
+            if (defaultControlSocket == null)
                 return;
 
-            try
-            {
-                controlPortSocket.close();
-            }
-            finally
-            {
-                controlPortSocket = null;
-            }
+            defaultControlSocket.setConf(TorConfig.EXIT_NODES, exitNodeTargeting);
+            defaultControlSocket.setConf(TorConfig.STRICT_NODES, "1");
+
+            reloadTorNetwork();
+        }
+
+        public void disableExitNodeTargeting()
+        {
+            if (defaultControlSocket == null)
+                return;
+
+            defaultControlSocket.resetConf(Arrays.asList(TorConfig.EXIT_NODES, TorConfig.STRICT_NODES));
+            reloadTorNetwork();
         }
 
         /**
