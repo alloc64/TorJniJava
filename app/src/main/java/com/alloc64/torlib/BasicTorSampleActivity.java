@@ -58,7 +58,9 @@ public class BasicTorSampleActivity extends Activity
                         @Override
                         public void onConnected(TorControlSocket socket)
                         {
-                            socket.send("GETINFO status/bootstrap-phase\r\n", new TorControlSocket.Callback()
+                            super.onConnected(socket);
+
+                            socket.sendAsync("GETINFO status/bootstrap-phase\r\n", new TorControlSocket.Callback()
                             {
                                 @Override
                                 public void onResult(TorControlSocket socket, TorControlSocket.Reply reply)
@@ -67,13 +69,14 @@ public class BasicTorSampleActivity extends Activity
 
                                     checkIp();
                                 }
-
                             });
                         }
 
                         @Override
                         public void onException(TorControlSocket socket, Exception e)
                         {
+                            super.onException(socket, e);
+
                             e.printStackTrace();
                         }
                     });

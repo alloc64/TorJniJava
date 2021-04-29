@@ -10,6 +10,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -78,16 +82,40 @@ public class TorControlSocket implements Runnable
         }
     }
 
-    public interface TorEventHandler
+    public abstract static class TorEventHandler
     {
-        void onConnected(TorControlSocket socket);
+        /**
+         * Dispatched on connect thread
+         * @param socket
+         */
+        public void onConnectedAsync(TorControlSocket socket)
+        {
 
-        void onException(TorControlSocket socket, Exception e);
+        }
+
+        /**
+         * Dispatched on main thread
+         * @param socket
+         */
+        public void onConnected(TorControlSocket socket)
+        {
+
+        }
+
+        public void onException(TorControlSocket socket, Exception e)
+        {
+
+        }
     }
 
     public interface Callback
     {
         void onResult(TorControlSocket socket, Reply reply);
+    }
+
+    public interface InfoCallback
+    {
+        void onResult(TorControlSocket socket, Map<String, String> result);
     }
 
     public static class Reply
@@ -150,7 +178,7 @@ public class TorControlSocket implements Runnable
     private BufferedReader inputStream;
     private OutputStreamWriter outputStream;
 
-    private final Executor writeThreadExecutor = Executors.newSingleThreadExecutor();
+    private Executor asyncSendExecutor = Executors.newSingleThreadExecutor();
 
     public TorControlSocket(PasswordDigest password, TorEventHandler eventHandler)
     {
@@ -189,7 +217,16 @@ public class TorControlSocket implements Runnable
                     this.inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     this.outputStream = new OutputStreamWriter(socket.getOutputStream());
 
-                    authenticate(password, (socket1, reply) -> eventHandler.onConnected(socket1));
+                    Reply authenticationReply = authenticate(password);
+
+                    if(authenticationReply == null || authenticationReply.getStatus() != ResponseCode.OK.getValue())
+                        throw new IllegalStateException("Authentication failed");
+
+                    eventHandler.onConnectedAsync(this);
+
+                    TLJNIBridge.get()
+                            .getMainThreadDispatcher()
+                            .dispatch(() -> eventHandler.onConnected(this));
                 }
                 catch (IOException e)
                 {
@@ -204,6 +241,17 @@ public class TorControlSocket implements Runnable
         catch (Exception e)
         {
             onException(e);
+        }
+        finally
+        {
+            try
+            {
+                close();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -269,56 +317,75 @@ public class TorControlSocket implements Runnable
         eventHandler.onException(this, e);
     }
 
-    public void send(String command, Callback callback)
+    public Reply send(String command)
     {
-        send(command, null, callback);
+        return send(command, null);
     }
 
-    public void send(String command, String params, Callback callback)
+    public Reply send(String command, String params)
     {
         if (outputStream == null)
-            return;
+            return null;
 
-        writeThreadExecutor.execute(() ->
+        try
+        {
+            outputStream.write(command);
+
+            if (!StringUtils.isEmpty(params))
+            {
+                StringTokenizer st = new StringTokenizer(params, "\n");
+                while (st.hasMoreTokens())
+                {
+                    String line = st.nextToken();
+
+                    if (line.startsWith("."))
+                        line = "." + line;
+                    if (line.endsWith("\r"))
+                        line += "\n";
+                    else
+                        line += "\r\n";
+
+                    outputStream.write(line);
+                }
+
+                outputStream.write(".\r\n");
+            }
+
+            outputStream.flush();
+
+            return read();
+        }
+        catch (Exception e)
+        {
+            onException(e);
+        }
+        return null;
+    }
+
+    public void sendAsync(String command, String params, Callback callback)
+    {
+        asyncSendExecutor.execute(() ->
         {
             try
             {
-                outputStream.write(command);
+                Reply reply = send(command, params);
 
-                if (!StringUtils.isEmpty(params))
+                TLJNIBridge.get().getMainThreadDispatcher().dispatch(() ->
                 {
-                    StringTokenizer st = new StringTokenizer(params, "\n");
-                    while (st.hasMoreTokens())
-                    {
-                        String line = st.nextToken();
-
-                        if (line.startsWith("."))
-                            line = "." + line;
-                        if (line.endsWith("\r"))
-                            line += "\n";
-                        else
-                            line += "\r\n";
-
-                        outputStream.write(line);
-                    }
-
-                    outputStream.write(".\r\n");
-                }
-
-                outputStream.flush();
-
-                Reply reply = read();
-
-                TLJNIBridge
-                        .get()
-                        .getMainThreadDispatcher()
-                        .dispatch(() -> callback.onResult(TorControlSocket.this, reply));
+                    if(reply != null && callback != null)
+                        callback.onResult(TorControlSocket.this, reply);
+                });
             }
             catch (Exception e)
             {
                 onException(e);
             }
         });
+    }
+
+    public void sendAsync(String command, Callback callback)
+    {
+        sendAsync(command, null, callback);
     }
 
     /**
@@ -343,9 +410,9 @@ public class TorControlSocket implements Runnable
      * To authenticate under this scheme, the controller sends Tor the original
      * secret that was used to generate the password.
      */
-    private void authenticate(PasswordDigest password, Callback callback)
+    private Reply authenticate(PasswordDigest password)
     {
-        send(String.format("AUTHENTICATE %s\r\n", password.getHashedPassword()), null, callback);
+        return send(String.format("AUTHENTICATE %s\r\n", password.getSecretHex()), null);
     }
 
     /**
@@ -360,8 +427,82 @@ public class TorControlSocket implements Runnable
      * <li>"HALT" or "TERM" : Immediate shutdown: clean up and exit now</li>
      * </ul>
      */
-    public void signal(Signal signal, Callback callback)
+    public Reply signal(Signal signal)
     {
-        send(String.format("SIGNAL %s\r\n", signal), callback);
+        return send(String.format("SIGNAL %s\r\n", signal));
+    }
+
+
+    /**
+     * Queries the Tor server for keyed values that are not stored in the torrc
+     * configuration file.  Returns a map of keys to values.
+     * <p>
+     * Recognized keys include:
+     * <ul>
+     * <li>"version" : The version of the server's software, including the name
+     *  of the software. (example: "Tor 0.0.9.4")</li>
+     * <li>"desc/id/<OR identity>" or "desc/name/<OR nickname>" : the latest server
+     * descriptor for a given OR, NUL-terminated.  If no such OR is known, the
+     * corresponding value is an empty string.</li>
+     * <li>"network-status" : a space-separated list of all known OR identities.
+     * This is in the same format as the router-status line in directories;
+     * see tor-spec.txt for details.</li>
+     * <li>"addr-mappings/all"</li>
+     * <li>"addr-mappings/config"</li>
+     * <li>"addr-mappings/cache"</li>
+     * <li>"addr-mappings/control" : a space-separated list of address mappings, each
+     * in the form of "from-address=to-address".  The 'config' key
+     * returns those address mappings set in the configuration; the 'cache'
+     * key returns the mappings in the client-side DNS cache; the 'control'
+     * key returns the mappings set via the control interface; the 'all'
+     * target returns the mappings set through any mechanism.</li>
+     * <li>"circuit-status" : A series of lines as for a circuit status event. Each line is of the form:
+     * "CircuitID CircStatus Path"</li>
+     * <li>"stream-status" : A series of lines as for a stream status event.  Each is of the form:
+     * "StreamID StreamStatus CircID Target"</li>
+     * <li>"orconn-status" : A series of lines as for an OR connection status event.  Each is of the
+     * form: "ServerID ORStatus"</li>
+     * </ul>
+     * @return
+     */
+    public Map<String, String> getInfo(List<String> keys)
+    {
+        StringBuilder sb = new StringBuilder("GETINFO");
+        for (String key : keys)
+            sb.append(" ").append(key);
+
+        sb.append("\r\n");
+
+        Reply reply = send(sb.toString());
+
+        String[] lines = reply.getMessage().split("\n");
+
+        Map<String, String> m = new LinkedHashMap<>();
+
+        for (String msg : lines)
+        {
+            int idx = msg.indexOf('=');
+            if (idx < 0)
+                break;
+            String k = msg.substring(0, idx);
+
+            String v;
+
+            if (reply.getRest() != null)
+                v = reply.getRest();
+            else
+                v = reply.getRest().substring(idx + 1);
+
+            m.put(k, v);
+        }
+
+        return m;
+    }
+
+    public String getInfo(String key)
+    {
+        Map<String, String> m = getInfo(Collections.singletonList(key));
+
+        return m.get(key);
     }
 }

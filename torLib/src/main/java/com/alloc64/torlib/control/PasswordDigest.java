@@ -64,6 +64,11 @@ public class PasswordDigest
         return secret.clone();
     }
 
+    public String getSecretHex()
+    {
+        return Bytes.hex(getSecret());
+    }
+
     /**
      * Return the hashed password in the format used by Tor.
      */

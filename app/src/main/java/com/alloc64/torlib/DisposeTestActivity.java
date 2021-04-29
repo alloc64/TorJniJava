@@ -81,7 +81,10 @@ public class DisposeTestActivity extends Activity
                     @Override
                     public void onConnected(TorControlSocket socket)
                     {
-                        socket.send("GETINFO status/bootstrap-phase\r\n", (socket1, reply) -> torStatus.setText(String.format("Tor is in state: %s", reply.getMessage())));
+                        super.onConnected(socket);
+
+                        socket.sendAsync("GETINFO status/bootstrap-phase\r\n",
+                                (socket1, reply) -> torStatus.setText(String.format("Tor is in state: %s", reply.getMessage())));
                     }
 
                     @Override
