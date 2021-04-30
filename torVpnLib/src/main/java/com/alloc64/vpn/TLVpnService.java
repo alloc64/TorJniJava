@@ -3,7 +3,6 @@ package com.alloc64.vpn;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.VpnService;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
@@ -21,7 +20,7 @@ public class TLVpnService extends VpnService implements IVPNService
 {
     private static final String TAG = TLVpnService.class.getName();
 
-    private TorVpnProvider torVpnProvider = new TorVpnProvider();
+    private TorVpnProvider torVpnProvider;
 
     private ParcelFileDescriptor tunInterface;
 
@@ -43,6 +42,8 @@ public class TLVpnService extends VpnService implements IVPNService
     public void onCreate()
     {
         super.onCreate();
+
+        this.torVpnProvider = new TorVpnProvider(this);
 
         this.serviceIncomingMessageHandler = new ServiceIncomingMessageHandler(this)
         {
@@ -114,64 +115,14 @@ public class TLVpnService extends VpnService implements IVPNService
 
     public void connect(ProtoconfidConnectionStateMessage csm)
     {
-        torVpnProvider.start(this, "VPN", new VpnService.Builder());
+        torVpnProvider.connect(new TorVpnProvider.VpnConfiguration(new VpnService.Builder())
+                .setSessionName("VPN")
+                .setGatewayIp("172.168.21.1")
+                .setClientIp("172.168.21.2")
+                .setClientIpMask("255.255.255.0")
+        );
 
         //TODO: process connection
-        /*
-        VPNSocketAddress connectionAddress = csm.getConnectionAddress();
-        int protocolType = csm.getProtocolType();
-        JSONObject handshakePayload = csm.getHandshakePayload();
-
-        if (connectionAddress == null)
-        {
-            setError(VPNError.InvalidAddress);
-            return;
-        }
-
-        if(protocolType != VPNProtocolType.DTLS && protocolType != VPNProtocolType.SSL)
-        {
-            setError(VPNError.InvalidProtocolType);
-            return;
-        }
-
-        if(handshakePayload == null)
-        {
-            setError(VPNError.InvalidHandshakePayload);
-            return;
-        }
-
-        if (protoconfidThread != null)
-        {
-            protoconfidThread.disconnect();
-            protoconfidThread = null;
-        }
-
-        protoconfidThread = new ProtoconfidVPNTunnelThread(this, connectionAddress, protocolType, handshakePayload, TAG)
-        {
-            @Override
-            protected String getAuthToken()
-            {
-                return TLVpnService.this.getAuthToken();
-            }
-
-            @Override
-            protected String getRequestSecretKey()
-            {
-                return TLVpnService.this.getRequestSecretKey();
-            }
-
-            @Override
-            protected void onConnectFailed(String message)
-            {
-                super.onConnectFailed(message);
-
-                TLVpnService.this.onConnectFailed(message);
-            }
-        };
-
-        protoconfidThread.connect();
-
-         */
     }
 
     protected void onConnectFailed(String message)
@@ -181,14 +132,7 @@ public class TLVpnService extends VpnService implements IVPNService
 
     public void disconnect()
     {
-        /*
-        if (protoconfidThread != null)
-        {
-            protoconfidThread.disconnect();
-            protoconfidThread = null;
-        }
-
-         */
+        torVpnProvider.disconnect();
 
         setStateInternal(VPNConnectionState.Disconnected);
     }

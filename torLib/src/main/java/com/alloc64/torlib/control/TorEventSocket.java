@@ -18,9 +18,9 @@ public class TorEventSocket extends TorAbstractControlSocket
     private final List<String> registeredEvents;
     private final EventHandler eventHandler;
 
-    public TorEventSocket(PasswordDigest password, List<String> registeredEvents, EventHandler eventHandler)
+    public TorEventSocket(PasswordDigest password, List<String> registeredEvents, EventHandler eventHandler, MainThreadDispatcher mainThreadDispatcher)
     {
-        super(password);
+        super(password, mainThreadDispatcher);
 
         this.registeredEvents = registeredEvents;
         this.eventHandler = eventHandler;

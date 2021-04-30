@@ -7,6 +7,8 @@ import okhttp3.Response;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.alloc64.jni.TLJNIBridge;
@@ -41,6 +43,7 @@ public class BasicTorSampleActivity extends Activity
             TLJNIBridge.Tor tor = bridge.getTor();
 
             PasswordDigest controlPortPassword = PasswordDigest.generateDigest();
+            Handler handler = new Handler(Looper.getMainLooper());
 
             tor.createTorConfig()
                     .setTorCommandLine(new TorConfig()
@@ -80,7 +83,7 @@ public class BasicTorSampleActivity extends Activity
 
                             e.printStackTrace();
                         }
-                    }));
+                    }, handler::post));
 
             this.httpClient = tor
                     .createOkHttpClient(socksPort)

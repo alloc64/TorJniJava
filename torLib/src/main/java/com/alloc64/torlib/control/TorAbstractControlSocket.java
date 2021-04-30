@@ -124,6 +124,11 @@ public class TorAbstractControlSocket implements Runnable
         void onResult(TorControlSocket socket, Map<String, String> result);
     }
 
+    public interface MainThreadDispatcher
+    {
+        void dispatch(Runnable runnable);
+    }
+
     public static class Reply
     {
         private int status;
@@ -205,6 +210,7 @@ public class TorAbstractControlSocket implements Runnable
     private static final int CONNECTION_RETRY_COUNT = 20;
 
     private final PasswordDigest password;
+    private final MainThreadDispatcher mainThreadDispatcher;
     private InetSocketAddress socketAddress;
 
     protected Socket socket;
@@ -214,9 +220,15 @@ public class TorAbstractControlSocket implements Runnable
 
     private final Executor asyncSendExecutor = Executors.newSingleThreadExecutor();
 
-    protected TorAbstractControlSocket(PasswordDigest password)
+    protected TorAbstractControlSocket(PasswordDigest password, MainThreadDispatcher mainThreadDispatcher)
     {
         this.password = password;
+        this.mainThreadDispatcher = mainThreadDispatcher;
+    }
+
+    public MainThreadDispatcher getMainThreadDispatcher()
+    {
+        return mainThreadDispatcher;
     }
 
     public void connect(InetSocketAddress socketAddress)
@@ -419,7 +431,7 @@ public class TorAbstractControlSocket implements Runnable
             {
                 List<Reply> reply = send(command, params);
 
-                TLJNIBridge.get().getMainThreadDispatcher().dispatch(() ->
+                getMainThreadDispatcher().dispatch(() ->
                 {
                     if (reply != null && callback != null)
                         callback.onResult(reply);

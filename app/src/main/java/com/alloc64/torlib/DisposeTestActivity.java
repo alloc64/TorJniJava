@@ -3,6 +3,7 @@ package com.alloc64.torlib;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.widget.TextView;
 
@@ -60,6 +61,7 @@ public class DisposeTestActivity extends Activity
             torStatus.setText("Tor is starting");
 
         PasswordDigest controlPortPassword = PasswordDigest.generateDigest();
+        Handler handler = new Handler(Looper.getMainLooper());
 
         TLJNIBridge
                 .get()
@@ -89,7 +91,7 @@ public class DisposeTestActivity extends Activity
                     {
                         e.printStackTrace();
                     }
-                }));
+                }, handler::post));
     }
 
     private void stopTor()

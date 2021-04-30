@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Build;
+import android.os.Looper;
 import android.util.Log;
 
 import com.alloc64.http.ProxiedSocketFactory;
@@ -25,24 +26,26 @@ import java.util.Map;
 
 import okhttp3.OkHttpClient;
 
-import static android.content.Context.CONNECTIVITY_SERVICE;
-
 public class TLJNIBridge
 {
     public static final String TAG = TLJNIBridge.class.getName();
 
     public class Tor
     {
-        private final List<TorControlSocket> controlPortSockets = new ArrayList<>();
+        private final List<TorAbstractControlSocket> controlPortSockets = new ArrayList<>();
         private TorControlSocket defaultControlSocket;
 
         public String getTorVersion()
         {
+            ensureMainThread();
+
             return jniTrampoline.call(TLJNIBridge.this::a1);
         }
 
         public Tor createTorConfig() throws IllegalStateException
         {
+            ensureMainThread();
+
             if (!jniTrampoline.call(TLJNIBridge.this::a2))
                 throw new IllegalStateException("Unable to create transport config.");
 
@@ -51,6 +54,8 @@ public class TLJNIBridge
 
         public Tor setTorCommandLine(String[] args)
         {
+            ensureMainThread();
+
             if (!jniTrampoline.call(() -> a5(args)))
                 throw new IllegalStateException("Unable to set command line arguments.");
 
@@ -59,31 +64,48 @@ public class TLJNIBridge
 
         public Tor setTorCommandLine(TorConfig torConfig)
         {
+            ensureMainThread();
+
             setTorCommandLine(torConfig.asCommands());
             return this;
         }
 
         public Tor attachControlPort(InetSocketAddress socketAddress, TorAbstractControlSocket... controlSockets)
         {
-            for (TorAbstractControlSocket s : controlSockets)
-            {
-                s.connect(socketAddress);
+            ensureMainThread();
 
-                if (s instanceof TorControlSocket)
-                    this.defaultControlSocket = (TorControlSocket) s;
+            if(controlPortSockets.size() < 1)
+            {
+                for (TorAbstractControlSocket s : controlSockets)
+                {
+                    s.connect(socketAddress);
+
+                    if (s instanceof TorControlSocket)
+                        this.defaultControlSocket = (TorControlSocket) s;
+
+                    this.controlPortSockets.add(s);
+                }
+            }
+            else
+            {
+                Log.i(TAG, "Ignoring control port attachment, control port is already connected.");
             }
 
             return this;
         }
 
-        private TorControlSocket getControlPortSocket()
+        public TorControlSocket getControlPortSocket()
         {
+            ensureMainThread();
+
             return defaultControlSocket;
         }
 
         public void detachControlPort()
         {
-            for (TorControlSocket s : controlPortSockets)
+            ensureMainThread();
+
+            for (TorAbstractControlSocket s : controlPortSockets)
             {
                 try
                 {
@@ -121,6 +143,8 @@ public class TLJNIBridge
          */
         public void setGeoIPFiles(File ipv4, File ipv6)
         {
+            ensureMainThread();
+
             if(defaultControlSocket != null)
             {
                 defaultControlSocket.setConf(TorConfig.GEO_IP_FILE, ipv4.getAbsolutePath());
@@ -138,6 +162,8 @@ public class TLJNIBridge
          */
         public void setExitNodeTargeting(String exitNodeTargeting)
         {
+            ensureMainThread();
+
             if (defaultControlSocket == null)
                 return;
 
@@ -149,6 +175,8 @@ public class TLJNIBridge
 
         public void disableExitNodeTargeting()
         {
+            ensureMainThread();
+
             if (defaultControlSocket == null)
                 return;
 
@@ -165,9 +193,11 @@ public class TLJNIBridge
          */
         public Tor startTor()
         {
+            ensureMainThread();
+
             if (isTorRunning())
             {
-                Log.i(TAG, "Ignoring start. T is already running.");
+                Log.d(TAG, "Ignoring start. T is already running.");
             }
             else
             {
@@ -192,6 +222,8 @@ public class TLJNIBridge
          */
         public void destroyTor() throws IOException
         {
+            ensureMainThread();
+
             jniTrampoline.call(TLJNIBridge.this::a3);
 
             detachControlPort();
@@ -199,11 +231,15 @@ public class TLJNIBridge
 
         public boolean isTorRunning()
         {
+            ensureMainThread();
+
             return jniTrampoline.call(TLJNIBridge.this::a4);
         }
 
         public OkHttpClient.Builder createOkHttpClient(InetSocketAddress socketAddress)
         {
+            ensureMainThread();
+
             Proxy proxy = new Proxy(Proxy.Type.SOCKS, socketAddress);
 
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
@@ -218,6 +254,8 @@ public class TLJNIBridge
     {
         public Pdnsd startDnsd(String[] args)
         {
+            ensureMainThread();
+
             if (isPdnsdRunning())
             {
                 Log.i(TAG, "Ignoring start. PD is already running.");
@@ -232,16 +270,22 @@ public class TLJNIBridge
 
         public Pdnsd startPdnsd(PdnsdConfig config)
         {
+            ensureMainThread();
+
             return startDnsd(config.asCommands());
         }
 
         public void destroyPdnsd()
         {
+            ensureMainThread();
+
             jniTrampoline.call(TLJNIBridge.this::a9);
         }
 
         public boolean isPdnsdRunning()
         {
+            ensureMainThread();
+
             return jniTrampoline.call(TLJNIBridge.this::a7);
         }
     }
@@ -256,6 +300,8 @@ public class TLJNIBridge
                 String socksServerAddress,
                 String udpgwServerAddress)
         {
+            ensureMainThread();
+
             if (isInterfaceRunning())
             {
                 Log.i(TAG, "Ignoring start. T2 is already running.");
@@ -268,11 +314,15 @@ public class TLJNIBridge
 
         public void destroyInterface()
         {
+            ensureMainThread();
+
             jniTrampoline.call(TLJNIBridge.this::a11);
         }
 
         public boolean isInterfaceRunning()
         {
+            ensureMainThread();
+
             return jniTrampoline.call(TLJNIBridge.this::a14);
         }
     }
@@ -307,6 +357,8 @@ public class TLJNIBridge
 
     public static TLJNIBridge get()
     {
+        ensureMainThread();
+
         return instance;
     }
 
@@ -327,18 +379,28 @@ public class TLJNIBridge
 
     public void setLogProvider(LogProvider logProvider)
     {
+        ensureMainThread();
+
         this.logProvider = logProvider;
         this.a13(this);
     }
 
-    public MainThreadDispatcher getMainThreadDispatcher()
+    public synchronized MainThreadDispatcher getMainThreadDispatcher()
     {
         return mainThreadDispatcher;
     }
 
     public void setMainThreadDispatcher(MainThreadDispatcher mainThreadDispatcher)
     {
+        ensureMainThread();
+
         this.mainThreadDispatcher = mainThreadDispatcher;
+    }
+
+    private static void ensureMainThread()
+    {
+        if(Looper.myLooper() != Looper.getMainLooper())
+            throw new IllegalStateException("Bridge must be called only from main thread. Was called from: " + Thread.currentThread());
     }
 
     // region Tor native methods
@@ -389,7 +451,7 @@ public class TLJNIBridge
     public void a12(int priority, String tag, String message)
     {
         if (logProvider != null)
-            mainThreadDispatcher.dispatch(() -> logProvider.logNativeMessage(priority, tag, message));
+            getMainThreadDispatcher().dispatch(() -> logProvider.logNativeMessage(priority, tag, message));
     }
 
     public native void a13(TLJNIBridge bridge);

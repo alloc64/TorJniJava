@@ -29,14 +29,14 @@ public class TorControlSocket extends TorAbstractControlSocket
 {
     private ConnectionHandler eventHandler;
 
-    protected TorControlSocket(PasswordDigest password)
+    protected TorControlSocket(PasswordDigest password, MainThreadDispatcher mainThreadDispatcher)
     {
-        super(password);
+        super(password, mainThreadDispatcher);
     }
 
-    public TorControlSocket(PasswordDigest password, ConnectionHandler eventHandler)
+    public TorControlSocket(PasswordDigest password, ConnectionHandler eventHandler, MainThreadDispatcher mainThreadDispatcher)
     {
-        this(password);
+        this(password, mainThreadDispatcher);
         this.setEventHandler(eventHandler);
     }
 
@@ -53,7 +53,7 @@ public class TorControlSocket extends TorAbstractControlSocket
         if(eventHandler != null)
             eventHandler.onConnectedAsync(this);
 
-        TLJNIBridge.get().getMainThreadDispatcher().dispatch(() ->
+        getMainThreadDispatcher().dispatch(() ->
         {
             if(eventHandler != null)
                 eventHandler.onConnected(TorControlSocket.this);
