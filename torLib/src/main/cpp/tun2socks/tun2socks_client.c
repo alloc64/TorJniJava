@@ -293,8 +293,6 @@ static void run(void);
 static void init_arguments(const char *program_name);
 // ==== PSIPHON ====
 
-static void terminate(void);
-
 static int parse_arguments(int argc, char *argv[]);
 
 static int process_arguments(void);
@@ -383,17 +381,12 @@ void runTun2Socks(int vpnInterfaceFileDescriptor, int vpnInterfaceMTU, const cha
     options.tun_fd = vpnInterfaceFileDescriptor;
     options.tun_mtu = vpnInterfaceMTU;
     options.set_signal = 0;
-    options.loglevel = 4;
+    options.loglevel = 0;
 
     BLog_InitPsiphon();
 
     run();
 }
-
-void terminateTun2Socks() {
-    terminate();
-}
-
 
 void run() {
     // configure logger channels
@@ -604,7 +597,7 @@ void run() {
     DebugObjectGlobal_Finish();
 }
 
-void terminate(void) {
+void terminateTun2Socks(void) {
     ASSERT(!quitting)
 
     //BLog(BLOG_NOTICE, "tearing down");
@@ -935,7 +928,7 @@ void signal_handler(void *unused) {
 
     BLog(BLOG_NOTICE, "termination requested");
 
-    terminate();
+    terminateTun2Socks();
 }
 
 BAddr baddr_from_lwip(int is_ipv6, const ipX_addr_t *ipx_addr, uint16_t port_hostorder) {
@@ -1044,7 +1037,7 @@ void lwip_init_job_hadler(void *unused) {
 
     fail:
     if (!quitting) {
-        terminate();
+        terminateTun2Socks();
     }
 }
 
@@ -1058,7 +1051,6 @@ void tcp_timer_handler(void *unused) {
     BReactor_SetTimer(&ss, &tcp_timer);
 
     tcp_tmr();
-    return;
 }
 
 void device_error_handler(void *unused) {
@@ -1066,8 +1058,7 @@ void device_error_handler(void *unused) {
 
     BLog(BLOG_ERROR, "device error");
 
-    terminate();
-    return;
+    terminateTun2Socks();
 }
 
 void device_read_handler_send(void *unused, uint8_t *data, int data_len) {
@@ -1113,57 +1104,6 @@ void device_read_handler_send(void *unused, uint8_t *data, int data_len) {
 }
 
 #ifdef ANDROID
-
-int check_if_allowed(uint8_t *data, int data_len) {
-
-    ASSERT(data_len >= 0)
-
-    static int init = 0;
-
-    int packet_length = 0;
-
-    uint8_t ip_version = 0;
-    if (data_len > 0) {
-        ip_version = (data[0] >> 4);
-    }
-
-    switch (ip_version) {
-        case 4: {
-
-            int protocol = 4;
-            // parse IPv4 header
-            struct ipv4_header ipv4_header;
-            if (!ipv4_check(data, data_len, &ipv4_header, &data, &data_len)) {
-                goto fail;
-            }
-
-            // parse UDP
-            struct udp_header udp_header;
-            if (!udp_check(data, data_len, &udp_header, &data, &data_len)) {
-                goto fail;
-            }
-
-            return 1;
-        }
-            break;
-
-        case 6: {
-            // TODO: support IPv6 DNS Gateway
-            //  goto fail;
-        }
-            break;
-
-        default: {
-            //goto fail;
-        }
-            break;
-    }
-
-    return 1;
-
-    fail:
-    return 0;
-}
 
 int process_device_dns_packet(uint8_t *data, int data_len) {
     ASSERT(data_len >= 0)

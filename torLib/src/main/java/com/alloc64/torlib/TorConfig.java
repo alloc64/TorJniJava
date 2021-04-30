@@ -1887,10 +1887,9 @@ public class TorConfig extends ArgConfig
      *
      * (Default: 0)
      **/
-    public TorConfig setDisableNetwork(String value)
+    public TorConfig setDisableNetwork(boolean value)
     {
-        validate(value);
-        addCommandPrefixed(DISABLE_NETWORK, value);
+        addCommandPrefixed(DISABLE_NETWORK, convertBoolean(value));
         return this;
     }
 

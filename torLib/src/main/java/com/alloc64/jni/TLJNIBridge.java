@@ -1,5 +1,9 @@
 package com.alloc64.jni;
 
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.os.Build;
 import android.util.Log;
 
 import com.alloc64.http.ProxiedSocketFactory;
@@ -14,9 +18,14 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.OkHttpClient;
+
+import static android.content.Context.CONNECTIVITY_SERVICE;
 
 public class TLJNIBridge
 {
@@ -92,21 +101,16 @@ public class TLJNIBridge
             this.defaultControlSocket = null;
         }
 
-        public void setTorConf(String key, String value)
-        {
-            if (defaultControlSocket != null)
-                defaultControlSocket.setConf(key, value);
-        }
-
         public void setNetworkEnabled(boolean isEnabled)
         {
-            setTorConf(TorConfig.DISABLE_NETWORK, isEnabled ? "0" : "1");
+            if (defaultControlSocket != null)
+                defaultControlSocket.setNetworkEnabled(isEnabled);
         }
 
-        private void reloadTorNetwork()
+        public void reloadTorNetwork()
         {
-            setNetworkEnabled(true);
-            setNetworkEnabled(false);
+            if (defaultControlSocket != null)
+                defaultControlSocket.reloadTorNetwork();
         }
 
         /**
@@ -117,8 +121,11 @@ public class TLJNIBridge
          */
         public void setGeoIPFiles(File ipv4, File ipv6)
         {
-            setTorConf(TorConfig.GEO_IP_FILE, ipv4.getAbsolutePath());
-            setTorConf(TorConfig.GEO_IP_V6_FILE, ipv6.getAbsolutePath());
+            if(defaultControlSocket != null)
+            {
+                defaultControlSocket.setConf(TorConfig.GEO_IP_FILE, ipv4.getAbsolutePath());
+                defaultControlSocket.setConf(TorConfig.GEO_IP_V6_FILE, ipv6.getAbsolutePath());
+            }
         }
 
         /**

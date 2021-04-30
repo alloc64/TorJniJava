@@ -1,6 +1,7 @@
 package com.alloc64.torlib.control;
 
 import com.alloc64.jni.TLJNIBridge;
+import com.alloc64.torlib.TorConfig;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -296,5 +297,17 @@ public class TorControlSocket extends TorAbstractControlSocket
                 result.add(new Config(kv, "", true));
         }
         return result;
+    }
+
+
+    public void setNetworkEnabled(boolean isEnabled)
+    {
+        setConf(TorConfig.DISABLE_NETWORK, isEnabled ? "0" : "1");
+    }
+
+    public void reloadTorNetwork()
+    {
+        setNetworkEnabled(true);
+        setNetworkEnabled(false);
     }
 }

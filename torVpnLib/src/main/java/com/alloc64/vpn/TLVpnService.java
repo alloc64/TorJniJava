@@ -114,7 +114,7 @@ public class TLVpnService extends VpnService implements IVPNService
 
     public void connect(ProtoconfidConnectionStateMessage csm)
     {
-        torVpnProvider.start(this, new VpnService.Builder());
+        torVpnProvider.start(this, "VPN", new VpnService.Builder());
 
         //TODO: process connection
         /*

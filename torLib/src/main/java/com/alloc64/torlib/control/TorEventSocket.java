@@ -32,6 +32,19 @@ public class TorEventSocket extends TorAbstractControlSocket
         super.onConnectedAsync();
 
         setEvents(registeredEvents);
+
+        try
+        {
+            do
+            {
+                read();
+            }
+            while (socket.isConnected());
+        }
+        catch (Exception e)
+        {
+            onException(e);
+        }
     }
 
     @Override

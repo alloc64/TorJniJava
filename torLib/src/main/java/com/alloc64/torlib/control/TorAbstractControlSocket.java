@@ -207,7 +207,7 @@ public class TorAbstractControlSocket implements Runnable
     private final PasswordDigest password;
     private InetSocketAddress socketAddress;
 
-    private Socket socket;
+    protected Socket socket;
 
     private BufferedReader inputStream;
     private OutputStreamWriter outputStream;
@@ -270,16 +270,14 @@ public class TorAbstractControlSocket implements Runnable
         catch (Exception e)
         {
             onException(e);
-        }
-        finally
-        {
+
             try
             {
                 close();
             }
-            catch (IOException e)
+            catch (IOException e1)
             {
-                e.printStackTrace();
+                e1.printStackTrace();
             }
         }
     }
@@ -298,7 +296,7 @@ public class TorAbstractControlSocket implements Runnable
         e.printStackTrace();
     }
 
-    private List<Reply> read() throws IOException
+    protected List<Reply> read() throws IOException
     {
         List<Reply> replyList = new ArrayList<>();
 
