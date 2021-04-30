@@ -2041,6 +2041,12 @@ public class TorConfig extends ArgConfig
         return this;
     }
 
+    public TorConfig setTransPort(InetSocketAddress socketAddress)
+    {
+        addCommandPrefixed(TRANS_PORT, addressString(socketAddress));
+        return this;
+    }
+
     /**
      * Set keepalive period
      * <p>

@@ -66,7 +66,7 @@ public class TorAbstractControlSocket implements Runnable
         NEWNYM("NEWNYM"), // Switch to clean circuits, so new application requests don't share any circuits with old ones.  Also clears the client-side DNS cache.  (Tor MAY rate-limit its response to this signal.)
         HEARTBEAT("HEARTBEAT"), // Make Tor dump an unscheduled Heartbeat message to log.
         DORMANT("DORMANT"), // Tell Tor to become "dormant".  A dormant Tor will try to avoid CPU and network usage until it receives user-initiated network request.  (Don't use this on relays or hidden services yet!)
-        ACTIVE(""); // Tell Tor to stop being "dormant", as if it had received a user-initiated network request.
+        ACTIVE("ACTIVE"); // Tell Tor to stop being "dormant", as if it had received a user-initiated network request.
 
         private String val;
 

@@ -32,6 +32,9 @@
 #include <string.h>
 #include <limits.h>
 
+// PSIPHON
+#include "jni.h"
+
 #include <misc/version.h>
 #include <misc/loggers_string.h>
 #include <misc/loglevel.h>
@@ -151,7 +154,6 @@ struct tcp_client {
 #include <sys/prctl.h>
 #include <sys/un.h>
 #include <structure/BAVL.h>
-#include <jni.h>
 #include "../JNILogger.h"
 
 BAVL connections_tree;
@@ -291,6 +293,8 @@ static void run(void);
 static void init_arguments(const char *program_name);
 // ==== PSIPHON ====
 
+static void terminate(void);
+
 static int parse_arguments(int argc, char *argv[]);
 
 static int process_arguments(void);
@@ -368,13 +372,14 @@ void runTun2Socks(int vpnInterfaceFileDescriptor, int vpnInterfaceMTU, const cha
                   const char *vpnNetMaskStr, const char *socksServerAddressStr,
                   const char *udpgwServerAddressStr, int udpgwTransparentDNS) {
 
-    init_arguments("Tun2");
+    init_arguments("T2");
 
     options.netif_ipaddr = (char *) vpnIpAddressStr;
     options.netif_netmask = (char *) vpnNetMaskStr;
     options.socks_server_addr = (char *) socksServerAddressStr;
     options.udpgw_remote_server_addr = (char *) udpgwServerAddressStr;
     options.udpgw_transparent_dns = udpgwTransparentDNS;
+
     options.tun_fd = vpnInterfaceFileDescriptor;
     options.tun_mtu = vpnInterfaceMTU;
     options.set_signal = 0;
@@ -384,6 +389,11 @@ void runTun2Socks(int vpnInterfaceFileDescriptor, int vpnInterfaceMTU, const cha
 
     run();
 }
+
+void terminateTun2Socks() {
+    terminate();
+}
+
 
 void run() {
     // configure logger channels
@@ -594,7 +604,7 @@ void run() {
     DebugObjectGlobal_Finish();
 }
 
-void terminateTun2Socks() {
+void terminate(void) {
     ASSERT(!quitting)
 
     //BLog(BLOG_NOTICE, "tearing down");
@@ -925,7 +935,7 @@ void signal_handler(void *unused) {
 
     BLog(BLOG_NOTICE, "termination requested");
 
-    terminateTun2Socks();
+    terminate();
 }
 
 BAddr baddr_from_lwip(int is_ipv6, const ipX_addr_t *ipx_addr, uint16_t port_hostorder) {
@@ -1034,7 +1044,7 @@ void lwip_init_job_hadler(void *unused) {
 
     fail:
     if (!quitting) {
-        terminateTun2Socks();
+        terminate();
     }
 }
 
@@ -1056,7 +1066,8 @@ void device_error_handler(void *unused) {
 
     BLog(BLOG_ERROR, "device error");
 
-    terminateTun2Socks();
+    terminate();
+    return;
 }
 
 void device_read_handler_send(void *unused, uint8_t *data, int data_len) {
@@ -1102,6 +1113,57 @@ void device_read_handler_send(void *unused, uint8_t *data, int data_len) {
 }
 
 #ifdef ANDROID
+
+int check_if_allowed(uint8_t *data, int data_len) {
+
+    ASSERT(data_len >= 0)
+
+    static int init = 0;
+
+    int packet_length = 0;
+
+    uint8_t ip_version = 0;
+    if (data_len > 0) {
+        ip_version = (data[0] >> 4);
+    }
+
+    switch (ip_version) {
+        case 4: {
+
+            int protocol = 4;
+            // parse IPv4 header
+            struct ipv4_header ipv4_header;
+            if (!ipv4_check(data, data_len, &ipv4_header, &data, &data_len)) {
+                goto fail;
+            }
+
+            // parse UDP
+            struct udp_header udp_header;
+            if (!udp_check(data, data_len, &udp_header, &data, &data_len)) {
+                goto fail;
+            }
+
+            return 1;
+        }
+            break;
+
+        case 6: {
+            // TODO: support IPv6 DNS Gateway
+            //  goto fail;
+        }
+            break;
+
+        default: {
+            //goto fail;
+        }
+            break;
+    }
+
+    return 1;
+
+    fail:
+    return 0;
+}
 
 int process_device_dns_packet(uint8_t *data, int data_len) {
     ASSERT(data_len >= 0)
