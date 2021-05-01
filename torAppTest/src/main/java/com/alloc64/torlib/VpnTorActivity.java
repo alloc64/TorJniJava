@@ -2,31 +2,39 @@ package com.alloc64.torlib;
 
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.alloc64.vpn.VpnConnectionState;
 import com.alloc64.vpn.VpnError;
+import com.alloc64.vpn.VpnMessageTypes;
 import com.alloc64.vpn.client.AbstractVpnClient;
-import com.alloc64.vpn.client.VpnClient;
+import com.alloc64.vpn.client.TLVpnClient;
 import com.alloc64.vpn.messenger.BasicMessage;
+import com.alloc64.vpn.messenger.ConnectionRequestMessage;
+import com.alloc64.vpn.messenger.ConnectionStateMessage;
 
 public class VpnTorActivity extends Activity implements AbstractVpnClient.StateCallback
 {
+    private ProgressBar progressBar;
     private TextView statusTextView;
     private Button connectButton;
 
-    private final VpnClient vpnClient = new VpnClient();
+    private final TLVpnClient vpnClient = new TLVpnClient();
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_vpn_tor);
 
+        this.progressBar = findViewById(R.id.progress);
         this.statusTextView = findViewById(R.id.status);
         this.connectButton = findViewById(R.id.connect);
 
@@ -35,6 +43,14 @@ public class VpnTorActivity extends Activity implements AbstractVpnClient.StateC
         vpnClient.rebind(this);
 
         connectButton.setOnClickListener(this::onConnectButtonClicked);
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+
+        vpnClient.refreshState();
     }
 
     @Override
@@ -56,40 +72,43 @@ public class VpnTorActivity extends Activity implements AbstractVpnClient.StateC
     @Override
     public void onMessageReceived(int messageType, BasicMessage message)
     {
-
+        switch (messageType)
+        {
+            case VpnMessageTypes.GetState:
+            case VpnMessageTypes.ServiceStateChange:
+                if(message instanceof ConnectionStateMessage)
+                {
+                    ConnectionStateMessage csm = (ConnectionStateMessage) message;
+                    updateState(csm.getPayload());
+                }
+                break;
+        }
     }
 
     @Override
     public void onError(VpnError error)
     {
-        statusTextView.setText(String.format("Error: %s", error));
+        new AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage("An error occured: " + error)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which)
+                    {
+
+                    }
+                })
+        .show();
     }
 
     private void onConnectButtonClicked(View v)
     {
         VpnConnectionState state = vpnClient.getConnectionState();
 
-        switch (state)
+        if (state == VpnConnectionState.Disconnected)
         {
-            case Disconnected:
-                statusTextView.setText("Tap connect to start.");
-                connectButton.setText("Connect");
-                break;
-
-            case Connecting:
-                statusTextView.setText("VPN is connecting.");
-                connectButton.setText("Disconnect");
-                break;
-
-            case Connected:
-                statusTextView.setText("VPN is connected.");
-                connectButton.setText("Disconnect");
-                break;
-        }
-
-        if(state == VpnConnectionState.Disconnected)
-        {
-            vpnClient.connect(this, 0);
+            vpnClient.connect(this, new ConnectionRequestMessage.Request("TorVPN", "DE"));
         }
         else
         {
@@ -97,4 +116,27 @@ public class VpnTorActivity extends Activity implements AbstractVpnClient.StateC
         }
     }
 
+    private void updateState(VpnConnectionState state)
+    {
+        switch (state)
+        {
+            case Disconnected:
+                progressBar.setVisibility(View.INVISIBLE);
+                statusTextView.setText("Tap connect to start.");
+                connectButton.setText("Connect");
+                break;
+
+            case Connecting:
+                progressBar.setVisibility(View.VISIBLE);
+                statusTextView.setText("VPN is connecting.");
+                connectButton.setText("Disconnect");
+                break;
+
+            case Connected:
+                progressBar.setVisibility(View.INVISIBLE);
+                statusTextView.setText("VPN is connected.");
+                connectButton.setText("Disconnect");
+                break;
+        }
+    }
 }

@@ -12,12 +12,14 @@ import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -309,5 +311,26 @@ public class TorControlSocket extends TorAbstractControlSocket
     {
         setNetworkEnabled(true);
         setNetworkEnabled(false);
+    }
+    
+    /**
+     * Set targeting by country code, or by exit node ID.
+     *
+     * GEO IP files must be set in case you are targeting with country codes.
+     *
+     * @param exitNodeTargeting
+     */
+    public void setExitNodeTargeting(List<String> exitNodeTargeting)
+    {
+        setConf(TorConfig.EXIT_NODES, String.format("{%s}", StringUtils.join( exitNodeTargeting, ",")));
+        setConf(TorConfig.STRICT_NODES, "1");
+
+        reloadTorNetwork();
+    }
+
+    public void disableExitNodeTargeting()
+    {
+        resetConf(Arrays.asList(TorConfig.EXIT_NODES, TorConfig.STRICT_NODES));
+        reloadTorNetwork();
     }
 }

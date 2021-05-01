@@ -14,298 +14,288 @@ import android.os.Messenger;
 import com.alloc64.vpn.VpnConnectionState;
 import com.alloc64.vpn.VpnError;
 import com.alloc64.vpn.VpnMessageTypes;
-import com.alloc64.vpn.messenger.ConnectionStateMessage;
 import com.alloc64.vpn.messenger.BasicMessage;
-
+import com.alloc64.vpn.messenger.ConnectionRequestMessage;
+import com.alloc64.vpn.messenger.ConnectionStateMessage;
 
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 
 public class AbstractVpnClient
 {
-	public interface StateCallback
-	{
-		void onMessageReceived(int messageType, BasicMessage message);
-		void onError(VpnError error);
-	}
+    public interface StateCallback
+    {
+        void onMessageReceived(int messageType, BasicMessage message);
 
-	private static final String SOCKET_ADDRESS = "socket_address";
-	private static final String PROTOCOL_TYPE = "proto_type";
+        void onError(VpnError error);
+    }
 
-	private static final int CONNECT_REQUEST_CODE = 0x115;
+    private static final String REQUEST = "req";
+    private static final int CONNECT_REQUEST_CODE = 0x115;
 
-	private Messenger vpnServiceMessenger = null;
+    private Messenger vpnServiceMessenger = null;
 
-	private Messenger responseMessenger = null;
+    private Messenger responseMessenger = null;
 
-	private StateCallback stateCallback;
+    private StateCallback stateCallback;
 
-	private boolean serviceBound;
+    private boolean serviceBound;
 
-	private VpnConnectionState state = VpnConnectionState.Disconnected;
+    private VpnConnectionState state = VpnConnectionState.Disconnected;
 
-	private int tmpProtocolType = 0;
+    private ConnectionRequestMessage.Request tmpRequest;
 
-	private ServiceConnection serviceConnection = new ServiceConnection()
-	{
-		public void onServiceConnected(ComponentName className, IBinder service)
-		{
-			vpnServiceMessenger = new Messenger(service);
-			serviceBound = true;
+    private final ServiceConnection serviceConnection = new ServiceConnection()
+    {
+        public void onServiceConnected(ComponentName className, IBinder service)
+        {
+            vpnServiceMessenger = new Messenger(service);
+            serviceBound = true;
 
-			sendMessage(VpnMessageTypes.GetState);
-		}
+            sendMessage(VpnMessageTypes.GetState);
+        }
 
-		public void onServiceDisconnected(ComponentName className)
-		{
-			vpnServiceMessenger = null;
-			serviceBound = false;
-		}
-	};
+        public void onServiceDisconnected(ComponentName className)
+        {
+            vpnServiceMessenger = null;
+            serviceBound = false;
+        }
+    };
 
-	public void create(Context ctx)
-	{
-		if(ctx == null)
-			return;
+    public void create(Context ctx)
+    {
+        if (ctx == null)
+            return;
 
-		responseMessenger = new Messenger(new Handler(msg ->
-		{
-			try
-			{
-				onMessageReceived(msg, (BasicMessage) msg.obj);
-				return true;
-			}
-			catch (Exception e)
-			{
-				onLogException(e);
-			}
+        this.responseMessenger = new Messenger(new Handler(msg ->
+        {
+            try
+            {
+                onMessageReceived(msg, (BasicMessage) msg.obj);
+                return true;
+            }
+            catch (Exception e)
+            {
+                onLogException(e);
+            }
 
-			return false;
-		}));
-	}
+            return false;
+        }));
+    }
 
-	public void rebind(Context ctx, Class<?> cls)
-	{
-		if(ctx == null)
-			return;
+    public void rebind(Context ctx, Class<?> cls)
+    {
+        if (ctx == null)
+            return;
 
-		unbind(ctx);
+        unbind(ctx);
 
-		ctx.bindService(new Intent(ctx, cls), serviceConnection, Context.BIND_AUTO_CREATE);
-	}
+        ctx.bindService(new Intent(ctx, cls), serviceConnection, Context.BIND_AUTO_CREATE);
+    }
 
-	private void unbind(Context ctx)
-	{
-		try
-		{
-			if (serviceBound && ctx != null)
-			{
-				serviceBound = false;
-				ctx.unbindService(serviceConnection);
-			}
-		}
-		catch (Exception e)
-		{
-			serviceBound = false;
-			onLogException(e);
-		}
-	}
+    private void unbind(Context ctx)
+    {
+        try
+        {
+            if (serviceBound && ctx != null)
+            {
+                serviceBound = false;
+                ctx.unbindService(serviceConnection);
+            }
+        }
+        catch (Exception e)
+        {
+            serviceBound = false;
+            onLogException(e);
+        }
+    }
 
-	public void connect(Activity activity, int protocolType)
-	{
-		if(activity == null)
-		{
-			onError(VpnError.NoContext);
-			return;
-		}
+    public void connect(Activity activity, ConnectionRequestMessage.Request request)
+    {
+        if (activity == null)
+        {
+            onError(VpnError.NoContext);
+            return;
+        }
 
-		Intent intent = VpnService.prepare(activity.getApplicationContext());
+        Intent intent = VpnService.prepare(activity.getApplicationContext());
 
-		int rc = CONNECT_REQUEST_CODE;
+        int rc = CONNECT_REQUEST_CODE;
 
-		if (intent != null)
-		{
-			this.tmpProtocolType = protocolType;
+        if (intent != null)
+        {
+            this.tmpRequest = request;
 
-			try
-			{
-				activity.startActivityForResult(intent, rc);
-			}
-			catch (Exception e)
-			{
-				onLogException(e);
+            try
+            {
+                activity.startActivityForResult(intent, rc);
+            }
+            catch (Exception e)
+            {
+                onLogException(e);
 
-				onActivityResult(activity, rc, RESULT_CANCELED, null);
-			}
-		}
-		else
-		{
-			intent = new Intent();
-			//intent.putExtra(SOCKET_ADDRESS, socketAddress);
-			intent.putExtra(PROTOCOL_TYPE, protocolType);
+                onActivityResult(activity, rc, RESULT_CANCELED, null);
+            }
+        }
+        else
+        {
+            intent = new Intent();
+            intent.putExtra(REQUEST, request);
 
-			onActivityResult(activity, rc, RESULT_OK, intent);
-		}
-	}
+            onActivityResult(activity, rc, RESULT_OK, intent);
+        }
+    }
 
-	protected void onVPNPrepared(Activity activity, int protocolType)
-	{
-	}
+    protected void onVpnPrepared(Activity activity, ConnectionRequestMessage.Request request)
+    {
+        sendMessage(VpnMessageTypes.ServiceStateChange, new ConnectionRequestMessage(
+                VpnConnectionState.Connecting,
+                request
+        ));
+    }
 
-	public void disconnect()
-	{
-		sendMessage(VpnMessageTypes.ServiceStateChange, new ConnectionStateMessage(VpnConnectionState.Disconnected));
-	}
+    public void disconnect()
+    {
+        sendMessage(VpnMessageTypes.ServiceStateChange, new ConnectionStateMessage(VpnConnectionState.Disconnected));
+    }
 
-	public boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data)
-	{
-		try
-		{
-			if (requestCode == CONNECT_REQUEST_CODE)
-			{
-				int protocolType = tmpProtocolType;
+    public boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data)
+    {
+        try
+        {
+            if (requestCode == CONNECT_REQUEST_CODE)
+            {
+                ConnectionRequestMessage.Request request = tmpRequest;
 
-				if(protocolType <= 0)
-				{
-					if(data != null)
-					{
-						//socketAddress = (VPNSocketAddress) data.getSerializableExtra(SOCKET_ADDRESS);
-						//protocolType = data.getIntExtra(PROTOCOL_TYPE, VPNProtocolType.DTLS);
-					}
-				}
-				else
-				{
-					//tmpSocketAddress = null;
-					tmpProtocolType = 0;
-				}
+                if (request == null)
+                    request = data.getParcelableExtra(REQUEST);
 
-				if (resultCode == RESULT_OK)
-				{
-					onVPNPrepared(activity, protocolType);
-				}
-				else
-				{
-					onError(VpnError.VPNInterfaceCreationDenied);
-				}
+                if (request == null)
+                    onError(VpnError.InvalidRequest);
 
-				return true;
-			}
-		}
-		catch (Exception e)
-		{
-			onLogException(e);
-			onError(VpnError.FatalException);
-		}
+                if (resultCode == RESULT_OK)
+                    onVpnPrepared(activity, request);
+                else
+                    onError(VpnError.VPNInterfaceCreationDenied);
 
-		return false;
-	}
+                return true;
+            }
+        }
+        catch (Exception e)
+        {
+            onLogException(e);
+            onError(VpnError.FatalException);
+        }
 
-	public void destroy(Context ctx)
-	{
-		unbind(ctx);
-	}
+        return false;
+    }
 
-	//
+    public void destroy(Context ctx)
+    {
+        unbind(ctx);
+    }
 
-	public void setStateCallback(StateCallback stateCallback)
-	{
-		this.stateCallback = stateCallback;
-	}
+    //
 
-	protected void sendMessage(int messageType)
-	{
-		sendMessage(messageType, null);
-	}
+    public void setStateCallback(StateCallback stateCallback)
+    {
+        this.stateCallback = stateCallback;
+    }
 
-	protected void sendMessage(int messageType, BasicMessage payload)
-	{
-		if (!serviceBound)
-		{
-			onError(VpnError.ServiceNotBound);
-			return;
-		}
+    protected void sendMessage(int messageType)
+    {
+        sendMessage(messageType, null);
+    }
 
-		sendMessageNoCheck(messageType, payload);
-	}
+    protected void sendMessage(int messageType, BasicMessage payload)
+    {
+        if (!serviceBound)
+        {
+            onError(VpnError.ServiceNotBound);
+            return;
+        }
 
-	protected void sendMessageNoCheck(int messageType)
-	{
-		sendMessageNoCheck(messageType, null);
-	}
+        sendMessageNoCheck(messageType, payload);
+    }
 
-	protected void sendMessageNoCheck(int messageType, BasicMessage payload)
-	{
-		Message msg = Message.obtain(null, messageType, 0, 0, payload);
+    protected void sendMessageNoCheck(int messageType)
+    {
+        sendMessageNoCheck(messageType, null);
+    }
 
-		try
-		{
-			msg.replyTo = responseMessenger;
+    protected void sendMessageNoCheck(int messageType, BasicMessage payload)
+    {
+        Message msg = Message.obtain(null, messageType, 0, 0, payload);
 
-			if(vpnServiceMessenger != null)
-				vpnServiceMessenger.send(msg);
-		}
-		catch (Exception e)
-		{
-			onLogException(e);
-		}
-	}
+        try
+        {
+            msg.replyTo = responseMessenger;
 
-	public void refreshState()
-	{
-		sendMessageNoCheck(VpnMessageTypes.GetState);
-	}
+            if (vpnServiceMessenger != null)
+                vpnServiceMessenger.send(msg);
+        }
+        catch (Exception e)
+        {
+            onLogException(e);
+        }
+    }
 
-	public VpnConnectionState getConnectionState()
-	{
-		return state;
-	}
+    public void refreshState()
+    {
+        sendMessageNoCheck(VpnMessageTypes.GetState);
+    }
 
-	// region Callbacks
+    public VpnConnectionState getConnectionState()
+    {
+        return state;
+    }
 
-	private void onMessageReceived(Message m, BasicMessage message)
-	{
-		onMessageReceived(m.what, message);
-	}
+    // region Callbacks
 
-	protected void onMessageReceived(int messageType, BasicMessage message)
-	{
-		switch (messageType)
-		{
-			case VpnMessageTypes.GetState:
-			case VpnMessageTypes.ServiceStateChange:
+    private void onMessageReceived(Message m, BasicMessage message)
+    {
+        onMessageReceived(m.what, message);
+    }
 
-				if(message instanceof ConnectionStateMessage)
-				{
-					ConnectionStateMessage csm = (ConnectionStateMessage)message;
-					this.state = csm.getPayload();
+    protected void onMessageReceived(int messageType, BasicMessage message)
+    {
+        switch (messageType)
+        {
+            case VpnMessageTypes.GetState:
+            case VpnMessageTypes.ServiceStateChange:
 
-					VpnError error = csm.getError();
+                if (message instanceof ConnectionStateMessage)
+                {
+                    ConnectionStateMessage csm = (ConnectionStateMessage) message;
+                    this.state = csm.getPayload();
 
-					if(error != null && error != VpnError.None)
-						onError(csm.getError());
-				}
+                    VpnError error = csm.getError();
 
-				break;
-		}
+                    if (error != null && error != VpnError.None)
+                        onError(csm.getError());
+                }
 
-		if(stateCallback != null)
-			stateCallback.onMessageReceived(messageType, message);
-	}
+                break;
+        }
 
-	protected void onError(VpnError error)
-	{
-		if (error == null)
-			return;
+        if (stateCallback != null)
+            stateCallback.onMessageReceived(messageType, message);
+    }
 
-		if(stateCallback != null)
-			stateCallback.onError(error);
-	}
+    protected void onError(VpnError error)
+    {
+        if (error == null)
+            return;
 
-	protected void onLogException(Exception e)
-	{
-		if(e != null)
-			e.printStackTrace();
-	}
+        if (stateCallback != null)
+            stateCallback.onError(error);
+    }
 
-	// endregion
+    protected void onLogException(Exception e)
+    {
+        if (e != null)
+            e.printStackTrace();
+    }
+
+    // endregion
 }

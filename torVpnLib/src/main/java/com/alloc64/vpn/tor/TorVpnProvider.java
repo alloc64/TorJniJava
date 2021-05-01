@@ -19,12 +19,14 @@ import com.alloc64.vpn.VpnError;
 import com.alloc64.vpn.VpnException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -33,7 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class TorVpnProvider
+public abstract class TorVpnProvider
 {
     private static final String TAG = TorVpnProvider.class.toString();
     private static final long CONNECTION_TIMEOUT = 20 * 1000;
@@ -45,6 +47,7 @@ public class TorVpnProvider
         private String gatewayIp;
         private String clientIp;
         private String clientIpMask;
+        private String countryIso;
 
         public VpnConfiguration(VpnService.Builder vpnBuilder)
         {
@@ -92,6 +95,17 @@ public class TorVpnProvider
         public VpnConfiguration setClientIpMask(String clientIpMask)
         {
             this.clientIpMask = clientIpMask;
+            return this;
+        }
+
+        public String getCountryIso()
+        {
+            return countryIso;
+        }
+
+        public VpnConfiguration setCountryIso(String countryIso)
+        {
+            this.countryIso = countryIso;
             return this;
         }
     }
@@ -303,8 +317,8 @@ public class TorVpnProvider
                             @Override
                             public void onEvent(TorEventSocket socket, List<TorControlSocket.Reply> replyList)
                             {
-                                for (TorControlSocket.Reply r : replyList)
-                                    Log.i(TAG, "Received TOR event: " + r.getMessage());
+                                //for (TorControlSocket.Reply r : replyList)
+                                //    Log.i(TAG, "Received TOR event: " + r.getMessage());
                             }
 
                             @Override
@@ -323,6 +337,13 @@ public class TorVpnProvider
 
     private void enableTunInterfaceAsync(TorControlSocket socket, VpnConfiguration vpnConfiguration, ParcelFileDescriptor tunInterface)
     {
+        String targetCountryIso = vpnConfiguration.getCountryIso();
+
+        if (StringUtils.isEmpty(targetCountryIso))
+            socket.disableExitNodeTargeting();
+        else
+            socket.setExitNodeTargeting(Collections.singletonList(targetCountryIso));
+
         socket.setNetworkEnabled(true);
         //socket.signal(TorAbstractControlSocket.Signal.DEBUG);
 
@@ -368,32 +389,13 @@ public class TorVpnProvider
         });
     }
 
-    //TODO: dispatch callbacks
-    private void onConnecting()
-    {
-    }
+    public abstract void onConnecting();
 
-    private void onConnected()
-    {
-    }
+    public abstract void onConnected();
 
-    private void onDisconnected()
-    {
+    public abstract void onDisconnected();
 
-    }
-
-    private void onException(Exception exception)
-    {
-        VpnException e;
-
-        if (exception instanceof VpnException)
-            e = (VpnException) exception;
-        else
-            e = new VpnException(VpnError.FatalException, exception.getMessage(), exception);
-
-        //TODO: report e.getError()
-        e.printStackTrace();
-    }
+    public abstract void onException(Exception e);
 
     private void assetToFile(Context ctx, File targetFile, String path) throws IOException
     {
@@ -438,7 +440,7 @@ public class TorVpnProvider
                     onException(new VpnException(VpnError.ConnectionTimeout, "Connection timeout."));
                 }
             }
-        }, 0, 200, TimeUnit.MILLISECONDS);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     private void stopPendingConnectionCheck()

@@ -1,9 +1,5 @@
 package com.alloc64.jni;
 
-import android.annotation.TargetApi;
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.os.Build;
 import android.os.Looper;
 import android.util.Log;
 
@@ -18,11 +14,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import okhttp3.OkHttpClient;
 
@@ -74,7 +66,7 @@ public class TLJNIBridge
         {
             ensureMainThread();
 
-            if(controlPortSockets.size() < 1)
+            if (controlPortSockets.size() < 1)
             {
                 for (TorAbstractControlSocket s : controlSockets)
                 {
@@ -143,9 +135,7 @@ public class TLJNIBridge
          */
         public void setGeoIPFiles(File ipv4, File ipv6)
         {
-            ensureMainThread();
-
-            if(defaultControlSocket != null)
+            if (defaultControlSocket != null)
             {
                 defaultControlSocket.setConf(TorConfig.GEO_IP_FILE, ipv4.getAbsolutePath());
                 defaultControlSocket.setConf(TorConfig.GEO_IP_V6_FILE, ipv6.getAbsolutePath());
@@ -154,34 +144,22 @@ public class TLJNIBridge
 
         /**
          * Set targeting by country code, or by exit node ID.
-         *
+         * <p>
          * GEO IP files must be set in case you are targeting with country codes.
          * See {@link #setGeoIPFiles(File, File)}.
          *
          * @param exitNodeTargeting
          */
-        public void setExitNodeTargeting(String exitNodeTargeting)
+        public void setExitNodeTargeting(List<String> exitNodeTargeting)
         {
-            ensureMainThread();
-
-            if (defaultControlSocket == null)
-                return;
-
-            defaultControlSocket.setConf(TorConfig.EXIT_NODES, exitNodeTargeting);
-            defaultControlSocket.setConf(TorConfig.STRICT_NODES, "1");
-
-            reloadTorNetwork();
+            if (defaultControlSocket != null)
+                defaultControlSocket.setExitNodeTargeting(exitNodeTargeting);
         }
 
         public void disableExitNodeTargeting()
         {
-            ensureMainThread();
-
-            if (defaultControlSocket == null)
-                return;
-
-            defaultControlSocket.resetConf(Arrays.asList(TorConfig.EXIT_NODES, TorConfig.STRICT_NODES));
-            reloadTorNetwork();
+            if (defaultControlSocket != null)
+                defaultControlSocket.disableExitNodeTargeting();
         }
 
         /**
@@ -399,7 +377,7 @@ public class TLJNIBridge
 
     private static void ensureMainThread()
     {
-        if(Looper.myLooper() != Looper.getMainLooper())
+        if (Looper.myLooper() != Looper.getMainLooper())
             throw new IllegalStateException("Bridge must be called only from main thread. Was called from: " + Thread.currentThread());
     }
 

@@ -9,9 +9,9 @@ import android.os.Messenger;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import com.alloc64.vpn.messenger.ConnectionRequestMessage;
 import com.alloc64.vpn.messenger.ConnectionStateMessage;
 import com.alloc64.vpn.messenger.BasicMessage;
-import com.alloc64.vpn.messenger.ProtoconfidConnectionStateMessage;
 import com.alloc64.vpn.messenger.ReplyHandler;
 import com.alloc64.vpn.messenger.ServiceIncomingMessageHandler;
 import com.alloc64.vpn.tor.TorVpnProvider;
@@ -43,7 +43,41 @@ public class TLVpnService extends VpnService implements IVpnService
     {
         super.onCreate();
 
-        this.torVpnProvider = new TorVpnProvider(this);
+        this.torVpnProvider = new TorVpnProvider(this)
+        {
+            @Override
+            public void onConnecting()
+            {
+                // ignored
+            }
+
+            @Override
+            public void onConnected()
+            {
+                setStateInternal(VpnConnectionState.Connected);
+            }
+
+            @Override
+            public void onDisconnected()
+            {
+                // ignored
+            }
+
+            @Override
+            public void onException(Exception exception)
+            {
+                VpnException e;
+
+                if (exception instanceof VpnException)
+                    e = (VpnException) exception;
+                else
+                    e = new VpnException(VpnError.FatalException, exception.getMessage(), exception);
+
+                e.printStackTrace();
+                
+                setError(e.getVpnError());
+            }
+        };
 
         this.serviceIncomingMessageHandler = new ServiceIncomingMessageHandler(this)
         {
@@ -77,7 +111,7 @@ public class TLVpnService extends VpnService implements IVpnService
                             switch (state)
                             {
                                 case Connecting:
-                                    connect((ProtoconfidConnectionStateMessage) csm);
+                                    connect((ConnectionRequestMessage) csm);
                                     break;
 
                                 case Disconnected:
@@ -113,21 +147,17 @@ public class TLVpnService extends VpnService implements IVpnService
         serviceMessenger = null;
     }
 
-    public void connect(ProtoconfidConnectionStateMessage csm)
+    public void connect(ConnectionRequestMessage message)
     {
+        ConnectionRequestMessage.Request request = message.getRequest();
+        
         torVpnProvider.connect(new TorVpnProvider.VpnConfiguration(new VpnService.Builder())
-                .setSessionName("VPN")
+                .setSessionName(request.getSessionName())
                 .setGatewayIp("172.168.21.1")
                 .setClientIp("172.168.21.2")
                 .setClientIpMask("255.255.255.0")
+                .setCountryIso(request.getCountryIso())
         );
-
-        //TODO: process connection
-    }
-
-    protected void onConnectFailed(String message)
-    {
-
     }
 
     public void disconnect()

@@ -8,4 +8,6 @@ public enum VpnError
 	VPNInterfaceCreationDenied,
 	ServiceNotBound,
 	FatalException,
+	InvalidRequest
+    ;
 }

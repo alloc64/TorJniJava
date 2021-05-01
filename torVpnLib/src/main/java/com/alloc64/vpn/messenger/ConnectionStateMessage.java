@@ -7,8 +7,6 @@ public class ConnectionStateMessage extends BasicMessage<VpnConnectionState>
 {
 	private VpnError error;
 
-	private int protocolType;
-
 	public ConnectionStateMessage(VpnConnectionState payload)
 	{
 		super(payload);
@@ -22,15 +20,5 @@ public class ConnectionStateMessage extends BasicMessage<VpnConnectionState>
 	public void setError(VpnError error)
 	{
 		this.error = error;
-	}
-
-	public int getProtocolType()
-	{
-		return protocolType;
-	}
-
-	public void setProtocolType(int protocolType)
-	{
-		this.protocolType = protocolType;
 	}
 }
