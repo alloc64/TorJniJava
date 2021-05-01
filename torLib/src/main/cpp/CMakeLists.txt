@@ -151,4 +151,8 @@ target_link_libraries(transport pdnsd libancillary badvpn ${torlib} ${androidlog
 #
 # build hardening
 #
-# target_compile_options(transport PRIVATE "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O3>")
+target_compile_options(pdnsd PRIVATE "$<$<CONFIG:RELEASE>:-fvisibility=hidden>" "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:RELEASE>:-ffunction-sections>" "$<$<CONFIG:RELEASE>:-fdata-sections>")
+target_compile_options(libancillary PRIVATE "$<$<CONFIG:RELEASE>:-fvisibility=hidden>" "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:RELEASE>:-ffunction-sections>" "$<$<CONFIG:RELEASE>:-fdata-sections>")
+target_compile_options(badvpn PRIVATE "$<$<CONFIG:RELEASE>:-fvisibility=hidden>" "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:RELEASE>:-ffunction-sections>" "$<$<CONFIG:RELEASE>:-fdata-sections>")
+target_compile_options(transport PRIVATE "$<$<CONFIG:RELEASE>:-fvisibility=hidden>" "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:RELEASE>:-ffunction-sections>" "$<$<CONFIG:RELEASE>:-fdata-sections>")
+set_target_properties(transport PROPERTIES LINK_FLAGS_RELEASE -s)
