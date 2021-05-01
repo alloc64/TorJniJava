@@ -15,6 +15,8 @@ import com.alloc64.torlib.control.TorControlSocket;
 import com.alloc64.torlib.control.TorEventSocket;
 import com.alloc64.torlib.utils.TorUtils;
 import com.alloc64.vpn.BuildConfig;
+import com.alloc64.vpn.VpnError;
+import com.alloc64.vpn.VpnException;
 
 import org.apache.commons.io.IOUtils;
 
@@ -25,12 +27,16 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class TorVpnProvider
 {
     private static final String TAG = TorVpnProvider.class.toString();
+    private static final long CONNECTION_TIMEOUT = 20 * 1000;
     private final static int VPN_MTU = 1500;
 
     public static class VpnConfiguration
@@ -147,6 +153,7 @@ public class TorVpnProvider
 
     private final Executor executor = Executors.newSingleThreadExecutor();
     private boolean pdnsPortsAssigned = false;
+    private ScheduledFuture<?> pendingConnectionCheck;
 
     public TorVpnProvider(VpnService ctx)
     {
@@ -157,6 +164,8 @@ public class TorVpnProvider
 
     public void connect(VpnConfiguration vpnConfiguration)
     {
+        onConnecting();
+
         executor.execute(() ->
         {
             try
@@ -183,19 +192,28 @@ public class TorVpnProvider
 
     public void disconnect()
     {
-        TLJNIBridge bridge = TLJNIBridge.get();
-
-        if (!bridge.getTor().isTorRunning())
-            return;
-
-        executor.execute(() -> bridge.getTor().setNetworkEnabled(false));
-
-        bridge.getTun2Socks().destroyInterface();
-
         try
         {
-            if(tunInterface != null)
-                tunInterface.close();
+            TLJNIBridge bridge = TLJNIBridge.get();
+
+            if (!bridge.getTor().isTorRunning())
+                return;
+
+            executor.execute(() -> bridge.getTor().setNetworkEnabled(false));
+
+            bridge.getTun2Socks().destroyInterface();
+
+            try
+            {
+                if (tunInterface != null)
+                    tunInterface.close();
+            }
+            catch (Exception e)
+            {
+                onException(e);
+            }
+
+            onDisconnected();
         }
         catch (Exception e)
         {
@@ -280,7 +298,7 @@ public class TorVpnProvider
                             {
                                 TorVpnProvider.this.onException(e);
                             }
-                        }, mainThreadHandler::post), new TorEventSocket(controlPortPassword, Arrays.asList("CIRC", "STREAM", "ORCONN", "BW", "NOTICE", "ERR", "NEWDESC", "ADDRMAP"), new TorEventSocket.EventHandler()
+                        }, mainThreadHandler::post), new TorEventSocket(controlPortPassword, Arrays.asList("ORCONN", "BW", "NOTICE", "ERR"), new TorEventSocket.EventHandler()
                         {
                             @Override
                             public void onEvent(TorEventSocket socket, List<TorControlSocket.Reply> replyList)
@@ -308,41 +326,72 @@ public class TorVpnProvider
         socket.setNetworkEnabled(true);
         //socket.signal(TorAbstractControlSocket.Signal.DEBUG);
 
+        startPendingConnectionCheck(socket);
+
         mainThreadHandler.post(() ->
         {
-            if (!TLJNIBridge.get()
-                    .getPdnsd()
-                    .isPdnsdRunning())
+            try
             {
-                /*
-                 * Start PDNSd
-                 * This daemon implementation does not allow restart without crashing/exiting main process, so it is started once per app lifetime for now...
-                 */
-                TLJNIBridge.get()
+                if (!TLJNIBridge.get()
                         .getPdnsd()
-                        .startPdnsd(new PdnsdConfig()
-                                .setBaseDir(dataDirectory)
-                                .setUpstreamDnsAddress(InetSocketAddress.createUnresolved("127.0.0.1", portConfig.getDnsPort()))
-                                .setDnsServerAddress(InetSocketAddress.createUnresolved(vpnConfiguration.getGatewayIp(), portConfig.getUdpgwPort()))
+                        .isPdnsdRunning())
+                {
+                    /*
+                     * Start PDNSd
+                     * This daemon implementation does not allow restart without crashing/exiting main process, so it is started once per app lifetime for now...
+                     */
+                    TLJNIBridge.get()
+                            .getPdnsd()
+                            .startPdnsd(new PdnsdConfig()
+                                    .setBaseDir(dataDirectory)
+                                    .setUpstreamDnsAddress(InetSocketAddress.createUnresolved("127.0.0.1", portConfig.getDnsPort()))
+                                    .setDnsServerAddress(InetSocketAddress.createUnresolved(vpnConfiguration.getGatewayIp(), portConfig.getUdpgwPort()))
+                            );
+                }
+
+                TLJNIBridge
+                        .get()
+                        .getTun2Socks()
+                        .createInterface(
+                                tunInterface.detachFd(),
+                                VPN_MTU,
+                                vpnConfiguration.getClientIp(),
+                                vpnConfiguration.getClientIpMask(),
+                                String.format(Locale.US, "127.0.0.1:%d", portConfig.getSocksPort()),
+                                String.format(Locale.US, "%s:%d", vpnConfiguration.getGatewayIp(), portConfig.getUdpgwPort())
                         );
             }
-
-            TLJNIBridge
-                    .get()
-                    .getTun2Socks()
-                    .createInterface(
-                            tunInterface.detachFd(),
-                            VPN_MTU,
-                            vpnConfiguration.getClientIp(),
-                            vpnConfiguration.getClientIpMask(),
-                            String.format(Locale.US, "127.0.0.1:%d", portConfig.getSocksPort()),
-                            String.format(Locale.US, "%s:%d", vpnConfiguration.getGatewayIp(), portConfig.getUdpgwPort())
-                    );
+            catch (Exception e)
+            {
+                onException(e);
+            }
         });
     }
 
-    private void onException(Exception e)
+    //TODO: dispatch callbacks
+    private void onConnecting()
     {
+    }
+
+    private void onConnected()
+    {
+    }
+
+    private void onDisconnected()
+    {
+
+    }
+
+    private void onException(Exception exception)
+    {
+        VpnException e;
+
+        if (exception instanceof VpnException)
+            e = (VpnException) exception;
+        else
+            e = new VpnException(VpnError.FatalException, exception.getMessage(), exception);
+
+        //TODO: report e.getError()
         e.printStackTrace();
     }
 
@@ -352,5 +401,52 @@ public class TorVpnProvider
             return;
 
         IOUtils.copy(ctx.getAssets().open(path), new FileOutputStream(targetFile));
+    }
+
+    private void startPendingConnectionCheck(TorControlSocket socket)
+    {
+        stopPendingConnectionCheck();
+
+        this.pendingConnectionCheck = Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable()
+        {
+            private final long startTimestamp = System.currentTimeMillis();
+            
+            @Override
+            public void run()
+            {
+                Map<String, String> info = socket.getInfo(Arrays.asList(
+                        TorEventSocket.Event.STATUS_ENOUGH_DIR_INFO,
+                        TorEventSocket.Event.STATUS_REACHABILITY_SUCCEEDED_DIR,
+                        TorEventSocket.Event.NETWORK_LIVENESS)
+                );
+
+                boolean hasEnoughDirInfo = "1".equals(info.get(TorEventSocket.Event.STATUS_ENOUGH_DIR_INFO));
+                boolean reachabilitySucceededDir = "1".equals(info.get(TorEventSocket.Event.STATUS_REACHABILITY_SUCCEEDED_DIR));
+                boolean isNetworkAlive = "up".equals(info.get(TorEventSocket.Event.NETWORK_LIVENESS));
+
+                if(hasEnoughDirInfo && reachabilitySucceededDir && isNetworkAlive)
+                {
+                    stopPendingConnectionCheck();
+
+                    mainThreadHandler.post(() -> onConnected());
+                }
+                else if(System.currentTimeMillis() - startTimestamp >= CONNECTION_TIMEOUT)
+                {
+                    stopPendingConnectionCheck();
+                    mainThreadHandler.post(() -> disconnect());
+
+                    onException(new VpnException(VpnError.ConnectionTimeout, "Connection timeout."));
+                }
+            }
+        }, 0, 200, TimeUnit.MILLISECONDS);
+    }
+
+    private void stopPendingConnectionCheck()
+    {
+        if(pendingConnectionCheck != null)
+        {
+            pendingConnectionCheck.cancel(true);
+            this.pendingConnectionCheck = null;
+        }
     }
 }

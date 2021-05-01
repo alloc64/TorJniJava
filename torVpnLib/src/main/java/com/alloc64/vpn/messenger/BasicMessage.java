@@ -1,10 +1,10 @@
 package com.alloc64.vpn.messenger;
 
-public abstract class IBasicMessage<T>
+public abstract class BasicMessage<T>
 {
 	private final T payload;
 
-	public IBasicMessage(T payload)
+	public BasicMessage(T payload)
 	{
 		this.payload = payload;
 	}

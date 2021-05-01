@@ -48,7 +48,7 @@ public abstract class ServiceIncomingMessageHandler extends Handler
 
         try
         {
-            processMessage(msg.what, msg, (IBasicMessage) msg.obj);
+            processMessage(msg.what, msg, (BasicMessage) msg.obj);
         }
         catch (Exception e)
         {
@@ -56,5 +56,5 @@ public abstract class ServiceIncomingMessageHandler extends Handler
         }
     }
 
-    protected abstract void processMessage(int messageType, Message m, IBasicMessage basicMessage);
+    protected abstract void processMessage(int messageType, Message m, BasicMessage basicMessage);
 }

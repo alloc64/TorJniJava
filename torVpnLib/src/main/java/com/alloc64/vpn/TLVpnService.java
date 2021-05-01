@@ -10,13 +10,13 @@ import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
 import com.alloc64.vpn.messenger.ConnectionStateMessage;
-import com.alloc64.vpn.messenger.IBasicMessage;
+import com.alloc64.vpn.messenger.BasicMessage;
 import com.alloc64.vpn.messenger.ProtoconfidConnectionStateMessage;
 import com.alloc64.vpn.messenger.ReplyHandler;
 import com.alloc64.vpn.messenger.ServiceIncomingMessageHandler;
 import com.alloc64.vpn.tor.TorVpnProvider;
 
-public class TLVpnService extends VpnService implements IVPNService
+public class TLVpnService extends VpnService implements IVpnService
 {
     private static final String TAG = TLVpnService.class.getName();
 
@@ -24,15 +24,15 @@ public class TLVpnService extends VpnService implements IVPNService
 
     private ParcelFileDescriptor tunInterface;
 
-    private VPNConnectionState state = VPNConnectionState.Disconnected;
+    private VpnConnectionState state = VpnConnectionState.Disconnected;
 
     private Messenger serviceMessenger;
 
     private ServiceIncomingMessageHandler serviceIncomingMessageHandler;
 
-    private VPNError error;
+    private VpnError error;
 
-    public VPNConnectionState getState()
+    public VpnConnectionState getState()
     {
         return state;
     }
@@ -48,23 +48,23 @@ public class TLVpnService extends VpnService implements IVPNService
         this.serviceIncomingMessageHandler = new ServiceIncomingMessageHandler(this)
         {
             @Override
-            protected void processMessage(int messageType, Message m, IBasicMessage basicMessage)
+            protected void processMessage(int messageType, Message m, BasicMessage basicMessage)
             {
                 switch (messageType)
                 {
-                    case VPNMessageTypes.GetState:
+                    case VpnMessageTypes.GetState:
 
                         ReplyHandler.reply(messageType, m, new ConnectionStateMessage(getState()));
 
                         break;
 
-                    case VPNMessageTypes.ServiceStateChange:
+                    case VpnMessageTypes.ServiceStateChange:
 
                         ConnectionStateMessage csm = (ConnectionStateMessage)basicMessage;
 
                         if(csm != null)
                         {
-                            VPNConnectionState state = csm.getPayload();
+                            VpnConnectionState state = csm.getPayload();
 
                             if(getState() == state)
                             {
@@ -134,16 +134,16 @@ public class TLVpnService extends VpnService implements IVPNService
     {
         torVpnProvider.disconnect();
 
-        setStateInternal(VPNConnectionState.Disconnected);
+        setStateInternal(VpnConnectionState.Disconnected);
     }
 
-    public void setStateInternal(VPNConnectionState state)
+    public void setStateInternal(VpnConnectionState state)
     {
-        VPNConnectionState oldState = this.state;
+        VpnConnectionState oldState = this.state;
         this.state = state;
 
-        if (state == VPNConnectionState.Connecting)
-            setError(VPNError.None);
+        if (state == VpnConnectionState.Connecting)
+            setError(VpnError.None);
 
         if(serviceIncomingMessageHandler == null)
             return;
@@ -154,18 +154,18 @@ public class TLVpnService extends VpnService implements IVPNService
         {
             ConnectionStateMessage cm = new ConnectionStateMessage(state);
 
-            if(oldState != VPNConnectionState.Disconnected)
+            if(oldState != VpnConnectionState.Disconnected)
                 cm.setError(error);
 
-            ReplyHandler.reply(VPNMessageTypes.ServiceStateChange, clientMessenger, cm);
+            ReplyHandler.reply(VpnMessageTypes.ServiceStateChange, clientMessenger, cm);
         }
     }
 
-    public void setError(VPNError error)
+    public void setError(VpnError error)
     {
         this.error = error;
 
-        if (error != VPNError.None)
-            setStateInternal(VPNConnectionState.Disconnected);
+        if (error != VpnError.None)
+            setStateInternal(VpnConnectionState.Disconnected);
     }
 }

@@ -6,13 +6,13 @@ import android.os.RemoteException;
 
 public class ReplyHandler
 {
-    public static void reply(int messageType, Message m, IBasicMessage payload)
+    public static void reply(int messageType, Message m, BasicMessage payload)
     {
         if(m != null)
             reply(messageType, m.replyTo, payload);
     }
 
-    public static void reply(int messageType, Messenger msgr, IBasicMessage payload)
+    public static void reply(int messageType, Messenger msgr, BasicMessage payload)
     {
         if(msgr != null)
         {

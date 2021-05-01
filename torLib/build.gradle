@@ -2,6 +2,9 @@ plugins {
     id 'com.android.library'
 }
 
+group "com.alloc64"
+version "1.0"
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"

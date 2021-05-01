@@ -10,24 +10,23 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
-import android.util.Log;
 
-import com.alloc64.vpn.VPNConnectionState;
-import com.alloc64.vpn.VPNError;
-import com.alloc64.vpn.VPNMessageTypes;
+import com.alloc64.vpn.VpnConnectionState;
+import com.alloc64.vpn.VpnError;
+import com.alloc64.vpn.VpnMessageTypes;
 import com.alloc64.vpn.messenger.ConnectionStateMessage;
-import com.alloc64.vpn.messenger.IBasicMessage;
+import com.alloc64.vpn.messenger.BasicMessage;
 
 
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 
-public class AbstractVPNClient
+public class AbstractVpnClient
 {
 	public interface StateCallback
 	{
-		void onMessageReceived(int messageType, IBasicMessage message);
-		void onError(VPNError error);
+		void onMessageReceived(int messageType, BasicMessage message);
+		void onError(VpnError error);
 	}
 
 	private static final String SOCKET_ADDRESS = "socket_address";
@@ -43,7 +42,7 @@ public class AbstractVPNClient
 
 	private boolean serviceBound;
 
-	private VPNConnectionState state = VPNConnectionState.Disconnected;
+	private VpnConnectionState state = VpnConnectionState.Disconnected;
 
 	private int tmpProtocolType = 0;
 
@@ -54,7 +53,7 @@ public class AbstractVPNClient
 			vpnServiceMessenger = new Messenger(service);
 			serviceBound = true;
 
-			sendMessage(VPNMessageTypes.GetState);
+			sendMessage(VpnMessageTypes.GetState);
 		}
 
 		public void onServiceDisconnected(ComponentName className)
@@ -73,7 +72,7 @@ public class AbstractVPNClient
 		{
 			try
 			{
-				onMessageReceived(msg, (IBasicMessage) msg.obj);
+				onMessageReceived(msg, (BasicMessage) msg.obj);
 				return true;
 			}
 			catch (Exception e)
@@ -116,7 +115,7 @@ public class AbstractVPNClient
 	{
 		if(activity == null)
 		{
-			onError(VPNError.NoContext);
+			onError(VpnError.NoContext);
 			return;
 		}
 
@@ -155,7 +154,7 @@ public class AbstractVPNClient
 
 	public void disconnect()
 	{
-		sendMessage(VPNMessageTypes.ServiceStateChange, new ConnectionStateMessage(VPNConnectionState.Disconnected));
+		sendMessage(VpnMessageTypes.ServiceStateChange, new ConnectionStateMessage(VpnConnectionState.Disconnected));
 	}
 
 	public boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data)
@@ -186,7 +185,7 @@ public class AbstractVPNClient
 				}
 				else
 				{
-					onError(VPNError.VPNInterfaceCreationDenied);
+					onError(VpnError.VPNInterfaceCreationDenied);
 				}
 
 				return true;
@@ -195,7 +194,7 @@ public class AbstractVPNClient
 		catch (Exception e)
 		{
 			onLogException(e);
-			onError(VPNError.FatalException);
+			onError(VpnError.FatalException);
 		}
 
 		return false;
@@ -218,11 +217,11 @@ public class AbstractVPNClient
 		sendMessage(messageType, null);
 	}
 
-	protected void sendMessage(int messageType, IBasicMessage payload)
+	protected void sendMessage(int messageType, BasicMessage payload)
 	{
 		if (!serviceBound)
 		{
-			onError(VPNError.ServiceNotBound);
+			onError(VpnError.ServiceNotBound);
 			return;
 		}
 
@@ -234,7 +233,7 @@ public class AbstractVPNClient
 		sendMessageNoCheck(messageType, null);
 	}
 
-	protected void sendMessageNoCheck(int messageType, IBasicMessage payload)
+	protected void sendMessageNoCheck(int messageType, BasicMessage payload)
 	{
 		Message msg = Message.obtain(null, messageType, 0, 0, payload);
 
@@ -253,36 +252,36 @@ public class AbstractVPNClient
 
 	public void refreshState()
 	{
-		sendMessageNoCheck(VPNMessageTypes.GetState);
+		sendMessageNoCheck(VpnMessageTypes.GetState);
 	}
 
-	public VPNConnectionState getConnectionState()
+	public VpnConnectionState getConnectionState()
 	{
 		return state;
 	}
 
 	// region Callbacks
 
-	private void onMessageReceived(Message m, IBasicMessage message)
+	private void onMessageReceived(Message m, BasicMessage message)
 	{
 		onMessageReceived(m.what, message);
 	}
 
-	protected void onMessageReceived(int messageType, IBasicMessage message)
+	protected void onMessageReceived(int messageType, BasicMessage message)
 	{
 		switch (messageType)
 		{
-			case VPNMessageTypes.GetState:
-			case VPNMessageTypes.ServiceStateChange:
+			case VpnMessageTypes.GetState:
+			case VpnMessageTypes.ServiceStateChange:
 
 				if(message instanceof ConnectionStateMessage)
 				{
 					ConnectionStateMessage csm = (ConnectionStateMessage)message;
 					this.state = csm.getPayload();
 
-					VPNError error = csm.getError();
+					VpnError error = csm.getError();
 
-					if(error != null && error != VPNError.None)
+					if(error != null && error != VpnError.None)
 						onError(csm.getError());
 				}
 
@@ -293,7 +292,7 @@ public class AbstractVPNClient
 			stateCallback.onMessageReceived(messageType, message);
 	}
 
-	protected void onError(VPNError error)
+	protected void onError(VpnError error)
 	{
 		if (error == null)
 			return;

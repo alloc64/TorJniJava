@@ -1,2 +1,2 @@
 include ':torVpnLib'
-include ':app', ':torLib'
+include ':torAppTest', ':torLib'

@@ -1,6 +1,6 @@
 package com.alloc64.vpn.messenger;
 
-import com.alloc64.vpn.VPNConnectionState;
+import com.alloc64.vpn.VpnConnectionState;
 
 import org.json.JSONObject;
 
@@ -8,7 +8,7 @@ public class ProtoconfidConnectionStateMessage extends ConnectionStateMessage
 {
 	private JSONObject handshakePayload;
 
-	public ProtoconfidConnectionStateMessage(VPNConnectionState payload)
+	public ProtoconfidConnectionStateMessage(VpnConnectionState payload)
 	{
 		super(payload);
 	}

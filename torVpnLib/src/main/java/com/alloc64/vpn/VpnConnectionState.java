@@ -1,6 +1,6 @@
 package com.alloc64.vpn;
 
-public enum VPNConnectionState
+public enum VpnConnectionState
 {
 	Disconnected,
 	Connecting,

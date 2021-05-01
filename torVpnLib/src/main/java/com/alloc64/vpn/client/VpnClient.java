@@ -4,11 +4,11 @@ import android.app.Activity;
 import android.content.Context;
 
 import com.alloc64.vpn.TLVpnService;
-import com.alloc64.vpn.VPNConnectionState;
-import com.alloc64.vpn.VPNMessageTypes;
+import com.alloc64.vpn.VpnConnectionState;
+import com.alloc64.vpn.VpnMessageTypes;
 import com.alloc64.vpn.messenger.ProtoconfidConnectionStateMessage;
 
-public class VPNClient extends AbstractVPNClient
+public class VpnClient extends AbstractVpnClient
 {
     public void rebind(Context ctx)
     {
@@ -20,12 +20,12 @@ public class VPNClient extends AbstractVPNClient
     {
         super.onVPNPrepared(activity, protocolType);
 
-        ProtoconfidConnectionStateMessage csm = new ProtoconfidConnectionStateMessage(VPNConnectionState.Connecting);
+        ProtoconfidConnectionStateMessage csm = new ProtoconfidConnectionStateMessage(VpnConnectionState.Connecting);
 
         //csm.setConnectionAddress(socketAddress);
         csm.setProtocolType(protocolType);
         //csm.setHandshakePayload(handshakePayload);
 
-        sendMessage(VPNMessageTypes.ServiceStateChange, csm);
+        sendMessage(VpnMessageTypes.ServiceStateChange, csm);
     }
 }

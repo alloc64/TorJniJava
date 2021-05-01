@@ -10,7 +10,7 @@
         android:supportsRtl="true">
         <activity android:name=".BasicTorSampleActivity" android:exported="true" />
         <activity android:name=".DisposeTestActivity" android:exported="true" />
-        <activity android:name=".MainActivity">
+        <activity android:name=".VpnTorActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

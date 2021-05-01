@@ -1,25 +1,25 @@
 package com.alloc64.vpn.messenger;
 
-import com.alloc64.vpn.VPNConnectionState;
-import com.alloc64.vpn.VPNError;
+import com.alloc64.vpn.VpnConnectionState;
+import com.alloc64.vpn.VpnError;
 
-public class ConnectionStateMessage extends IBasicMessage<VPNConnectionState>
+public class ConnectionStateMessage extends BasicMessage<VpnConnectionState>
 {
-	private VPNError error;
+	private VpnError error;
 
 	private int protocolType;
 
-	public ConnectionStateMessage(VPNConnectionState payload)
+	public ConnectionStateMessage(VpnConnectionState payload)
 	{
 		super(payload);
 	}
 
-	public VPNError getError()
+	public VpnError getError()
 	{
 		return error;
 	}
 
-	public void setError(VPNError error)
+	public void setError(VpnError error)
 	{
 		this.error = error;
 	}
