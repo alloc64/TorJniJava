@@ -141,10 +141,18 @@ public class TLVpnService extends VpnService implements IVpnService
     }
 
     @Override
+    public void onRevoke()
+    {
+        super.onRevoke();
+
+        disconnect();
+    }
+
+    @Override
     public void onDestroy()
     {
-        serviceIncomingMessageHandler = null;
-        serviceMessenger = null;
+        this.serviceIncomingMessageHandler = null;
+        this.serviceMessenger = null;
     }
 
     public void connect(ConnectionRequestMessage message)

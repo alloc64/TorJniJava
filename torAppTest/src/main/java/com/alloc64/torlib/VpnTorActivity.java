@@ -13,12 +13,10 @@ import android.widget.TextView;
 
 import com.alloc64.vpn.VpnConnectionState;
 import com.alloc64.vpn.VpnError;
-import com.alloc64.vpn.VpnMessageTypes;
 import com.alloc64.vpn.client.AbstractVpnClient;
 import com.alloc64.vpn.client.TLVpnClient;
 import com.alloc64.vpn.messenger.BasicMessage;
 import com.alloc64.vpn.messenger.ConnectionRequestMessage;
-import com.alloc64.vpn.messenger.ConnectionStateMessage;
 
 public class VpnTorActivity extends Activity implements AbstractVpnClient.StateCallback
 {
@@ -72,15 +70,30 @@ public class VpnTorActivity extends Activity implements AbstractVpnClient.StateC
     @Override
     public void onMessageReceived(int messageType, BasicMessage message)
     {
-        switch (messageType)
+        
+    }
+
+    @Override
+    public void onStateChanged(VpnConnectionState state)
+    {
+        switch (state)
         {
-            case VpnMessageTypes.GetState:
-            case VpnMessageTypes.ServiceStateChange:
-                if(message instanceof ConnectionStateMessage)
-                {
-                    ConnectionStateMessage csm = (ConnectionStateMessage) message;
-                    updateState(csm.getPayload());
-                }
+            case Disconnected:
+                progressBar.setVisibility(View.INVISIBLE);
+                statusTextView.setText("Tap connect to start.");
+                connectButton.setText("Connect");
+                break;
+
+            case Connecting:
+                progressBar.setVisibility(View.VISIBLE);
+                statusTextView.setText("VPN is connecting.");
+                connectButton.setText("Disconnect");
+                break;
+
+            case Connected:
+                progressBar.setVisibility(View.INVISIBLE);
+                statusTextView.setText("VPN is connected.");
+                connectButton.setText("Disconnect");
                 break;
         }
     }
@@ -113,30 +126,6 @@ public class VpnTorActivity extends Activity implements AbstractVpnClient.StateC
         else
         {
             vpnClient.disconnect();
-        }
-    }
-
-    private void updateState(VpnConnectionState state)
-    {
-        switch (state)
-        {
-            case Disconnected:
-                progressBar.setVisibility(View.INVISIBLE);
-                statusTextView.setText("Tap connect to start.");
-                connectButton.setText("Connect");
-                break;
-
-            case Connecting:
-                progressBar.setVisibility(View.VISIBLE);
-                statusTextView.setText("VPN is connecting.");
-                connectButton.setText("Disconnect");
-                break;
-
-            case Connected:
-                progressBar.setVisibility(View.INVISIBLE);
-                statusTextView.setText("VPN is connected.");
-                connectButton.setText("Disconnect");
-                break;
         }
     }
 }

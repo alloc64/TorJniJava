@@ -27,6 +27,8 @@ public class AbstractVpnClient
     {
         void onMessageReceived(int messageType, BasicMessage message);
 
+        void onStateChanged(VpnConnectionState state);
+
         void onError(VpnError error);
     }
 
@@ -88,6 +90,8 @@ public class AbstractVpnClient
         if (ctx == null)
             return;
 
+        ctx = ctx.getApplicationContext();
+
         unbind(ctx);
 
         ctx.bindService(new Intent(ctx, cls), serviceConnection, Context.BIND_AUTO_CREATE);
@@ -100,7 +104,8 @@ public class AbstractVpnClient
             if (serviceBound && ctx != null)
             {
                 serviceBound = false;
-                ctx.unbindService(serviceConnection);
+                ctx.getApplicationContext()
+                        .unbindService(serviceConnection);
             }
         }
         catch (Exception e)
@@ -273,6 +278,9 @@ public class AbstractVpnClient
 
                     if (error != null && error != VpnError.None)
                         onError(csm.getError());
+
+                    if (stateCallback != null)
+                        stateCallback.onStateChanged(state);
                 }
 
                 break;

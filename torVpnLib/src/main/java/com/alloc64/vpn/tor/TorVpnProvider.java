@@ -5,7 +5,6 @@ import android.net.VpnService;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
 
 import com.alloc64.jni.TLJNIBridge;
 import com.alloc64.torlib.PdnsdConfig;
@@ -266,7 +265,7 @@ public abstract class TorVpnProvider
 
             TorConfig torConfig = new TorConfig()
                     .addAllowMissingTorrc()
-                    .setLog(TorConfig.LogSeverity.Notice, TorConfig.LogOutput.Syslog)
+                    .setLog(BuildConfig.DEBUG ? TorConfig.LogSeverity.Warn : TorConfig.LogSeverity.Notice, TorConfig.LogOutput.Syslog)
                     .setRunAsDaemon(false)
                     .setControlPort(controlPortAddress)
                     .setSocksPort(portConfig.getSocksPort() + " IPv6Traffic PreferIPv6")
@@ -412,7 +411,7 @@ public abstract class TorVpnProvider
         this.pendingConnectionCheck = Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable()
         {
             private final long startTimestamp = System.currentTimeMillis();
-            
+
             @Override
             public void run()
             {
@@ -440,7 +439,7 @@ public abstract class TorVpnProvider
                     onException(new VpnException(VpnError.ConnectionTimeout, "Connection timeout."));
                 }
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 1000, 500, TimeUnit.MILLISECONDS);
     }
 
     private void stopPendingConnectionCheck()
