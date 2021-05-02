@@ -10,6 +10,7 @@ import com.alloc64.jni.TLJNIBridge;
 import com.alloc64.torlib.PdnsdConfig;
 import com.alloc64.torlib.TorConfig;
 import com.alloc64.torlib.control.PasswordDigest;
+import com.alloc64.torlib.control.TorAbstractControlSocket;
 import com.alloc64.torlib.control.TorControlSocket;
 import com.alloc64.torlib.control.TorEventSocket;
 import com.alloc64.torlib.utils.TorUtils;
@@ -344,6 +345,7 @@ public abstract class TorVpnProvider
             socket.setExitNodeTargeting(Collections.singletonList(targetCountryIso));
 
         socket.setNetworkEnabled(true);
+        socket.signal(TorAbstractControlSocket.Signal.NEWNYM);
         //socket.signal(TorAbstractControlSocket.Signal.DEBUG);
 
         startPendingConnectionCheck(socket);
